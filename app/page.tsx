@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import Link from 'next/link'
 import SearchBar from '@/components/SearchBar'
 import VerseDisplay from '@/components/VerseDisplay'
 import VerseSidebar from '@/components/VerseSidebar'
 import BibleNavigator from '@/components/BibleNavigator'
 import { BibleVerse } from '@/lib/bibleApi'
-import { Menu, X, BookOpen } from 'lucide-react'
+import { Menu, X, BookOpen, User, Settings } from 'lucide-react'
 
 export default function Home() {
   const [searchedVerses, setSearchedVerses] = useState<BibleVerse[]>([])
@@ -90,8 +91,8 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <header className="h-16 flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 px-4">
-        <div className="h-full flex items-center gap-3">
+      <header className="h-10 flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl px-4">
+        <div className="h-full flex items-center justify-between w-full">
           <button
             onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
             className="md:hidden p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -100,17 +101,25 @@ export default function Home() {
             {leftSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          <div className={`flex-1 transition-all duration-300 ${leftSidebarCollapsed || rightSidebarCollapsed ? 'max-w-2xl' : 'max-w-2xl'}`}>
+          <div className={`flex-1 transition-all duration-300 px-3 ${leftSidebarCollapsed || rightSidebarCollapsed ? 'max-w-2xl' : 'max-w-2xl'}`}>
             <SearchBar onSearch={handleSearch} isLoading={isLoading} />
           </div>
 
-          <button
-            onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-            className="md:hidden p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            aria-label="Toggle Verses Sidebar"
-          >
-            {rightSidebarOpen ? <X className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Profile">
+              <User className="w-5 h-5" />
+            </button>
+            <Link href="/settings" className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Settings">
+              <Settings className="w-5 h-5" />
+            </Link>
+            <button
+              onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+              className="md:hidden p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle Verses Sidebar"
+            >
+              {rightSidebarOpen ? <X className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </header>
 
