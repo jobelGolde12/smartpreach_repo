@@ -1,8 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smart Preach - Church Preaching Web App
+
+A modern, responsive web application designed for church preaching, allowing pastors to instantly display Bible verses during services.
+
+## Features
+
+- **Live Verse Search**: Search for Bible verses by keyword, phrase, or verse reference
+- **Debounced Search**: 300ms delay for smooth searching experience
+- **Verse Display Screen**: Large, readable verse display with smooth animations
+- **Verse Suggestion Panel**: Shows search results, recently used verses, and favorites
+- **Bible API Integration**: Uses bible-api.com for King James Version verses
+- **Turso Database**: Stores search history, recent verses, and favorites
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Fullscreen Mode**: Presentation-ready layout for congregation viewing
+- **Dark Mode Support**: Friendly for different lighting conditions
+
+## Tech Stack
+
+- **Next.js** (App Router) - React framework
+- **Tailwind CSS** - Styling
+- **Turso** (SQLite + libSQL) - Database
+- **TypeScript** - Type safety
+- **Server Actions** - Database operations
+- **lucide-react** - Icons
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ installed
+- npm, yarn, pnpm, or bun package manager
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <your-repo-url>
+cd smartspreach
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+3. Set up environment variables:
+
+Copy the `.env.example` file to `.env`:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and add your Turso database credentials:
+```env
+TURSO_DATABASE_URL=libsql://your-database-url.turso.io
+TURSO_AUTH_TOKEN=your-auth-token-here
+```
+
+For local development without Turso, you can use a local SQLite database:
+```env
+TURSO_DATABASE_URL=file:local.db
+# No auth token needed for local file
+```
+
+### Running the Development Server
 
 ```bash
 npm run dev
@@ -14,23 +78,87 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── api/verses/route.ts    # API endpoints for verse operations
+│   ├── layout.tsx             # Root layout with metadata
+│   ├── page.tsx               # Main page with app integration
+│   └── globals.css            # Global styles
+├── components/
+│   ├── SearchBar.tsx          # Search input with debouncing
+│   ├── VerseDisplay.tsx       # Main verse display with fullscreen
+│   └── VerseSidebar.tsx       # Sidebar with search, recent, favorites
+└── lib/
+    ├── bibleApi.ts            # Bible API integration
+    ├── serverActions.ts       # Server actions for DB operations
+    └── turso.ts               # Turso database connection
+```
 
-## Learn More
+## Usage
 
-To learn more about Next.js, take a look at the following resources:
+### Search for Verses
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Type a verse reference (e.g., "John 3:16") in the search bar
+2. Or type a keyword (e.g., "love", "faith", "forgiveness")
+3. Results will appear in the sidebar
+4. Click any verse to display it on the main screen
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Manage Verses
+
+- **Recent Verses**: View your recently displayed verses in the "Recent" tab
+- **Favorites**: Add verses to favorites by clicking the heart icon
+- **Fullscreen**: Click the fullscreen button in the top-right of the verse display for presentation mode
+
+### Responsive Design
+
+- **Desktop**: Two-column layout with sidebar
+- **Tablet**: Collapsible sidebar
+- **Mobile**: Full-screen verse view with slide-up verse list
+
+## Database Schema
+
+### Tables
+
+**verses**: Stores displayed verses
+- `id` (INTEGER, PRIMARY KEY)
+- `book` (TEXT)
+- `chapter` (INTEGER)
+- `verse` (INTEGER)
+- `text` (TEXT)
+- `translation` (TEXT)
+- `reference` (TEXT, UNIQUE)
+- `displayed_at` (INTEGER, timestamp)
+- `created_at` (INTEGER, timestamp)
+
+**search_logs**: Stores search history
+- `id` (INTEGER, PRIMARY KEY)
+- `query` (TEXT)
+- `result_count` (INTEGER)
+- `created_at` (INTEGER, timestamp)
+
+**favorites**: Stores favorite verses
+- `id` (INTEGER, PRIMARY KEY)
+- `verse_id` (INTEGER, FOREIGN KEY)
+- `created_at` (INTEGER, timestamp)
+
+## Building for Production
+
+```bash
+npm run build
+npm start
+```
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## License
+
+This project is licensed under the MIT License.
