@@ -8,6 +8,7 @@ import { BookOpen, ChevronRight, Loader2 } from 'lucide-react'
 interface BibleNavigatorContentProps {
   onSelectVerse: (verse: BibleVerse) => void
   isCollapsed?: boolean
+  onViewStateChange?: (isAtBooksLevel: boolean) => void
 }
 
 type ViewState = 'books' | 'chapters' | 'verses'
@@ -15,8 +16,17 @@ type ViewState = 'books' | 'chapters' | 'verses'
 export default function BibleNavigatorContent({
   onSelectVerse,
   isCollapsed = false,
+  onViewStateChange,
 }: BibleNavigatorContentProps) {
   const [viewState, setViewState] = useState<ViewState>('books')
+
+  // Notify parent when viewState changes
+  const updateViewState = (newState: ViewState) => {
+    setViewState(newState)
+    if (onViewStateChange) {
+      onViewStateChange(newState === 'books')
+    }
+  }
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null)
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null)
   const [verses, setVerses] = useState<BibleVerse[]>([])
@@ -43,13 +53,13 @@ export default function BibleNavigatorContent({
     setSelectedBook(book)
     setSelectedChapter(null)
     setVerses([])
-    setViewState('chapters')
+    updateViewState('chapters')
   }
 
   const handleChapterSelect = async (chapter: number) => {
     setSelectedChapter(chapter)
     setLoadingVerses(true)
-    setViewState('verses')
+    updateViewState('verses')
 
     try {
       const reference = `${selectedBook!.name} ${chapter}`
@@ -71,10 +81,10 @@ export default function BibleNavigatorContent({
 
   const handleBack = () => {
     if (viewState === 'verses') {
-      setViewState('chapters')
+      updateViewState('chapters')
       setVerses([])
     } else if (viewState === 'chapters') {
-      setViewState('books')
+      updateViewState('books')
       setSelectedBook(null)
       setSelectedChapter(null)
     }
@@ -90,7 +100,7 @@ export default function BibleNavigatorContent({
         {viewState !== 'books' && (
           <button
             onClick={handleBack}
-            className="w-full flex items-center gap-2 px-3 py-2 mb-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
             <ChevronRight className="w-4 h-4 rotate-180" />
             {viewState === 'verses' ? 'Back to Chapters' : 'Back to Books'}
