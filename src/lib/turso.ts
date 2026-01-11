@@ -69,8 +69,46 @@ export async function initializeDatabase() {
     await db.execute(`
       CREATE INDEX IF NOT EXISTS idx_verses_displayed_at ON verses(displayed_at)
     `)
+
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS idx_verses_text_fts ON verses(text)
+    `)
   } catch (error) {
     console.error('Failed to initialize database:', error)
+  }
+}
+
+export async function searchVersesLocally(keyword: string, limit: number = 20) {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return []
+    }
+
+    const searchTerm = `%${keyword}%`
+
+    const result = await turso.execute({
+      sql: `SELECT * FROM verses
+            WHERE text LIKE ?
+            ORDER BY displayed_at DESC
+            LIMIT ?`,
+      args: [searchTerm, limit],
+    })
+
+    return result.rows.map((row) => ({
+      id: row.id as number,
+      book: row.book as string,
+      chapter: row.chapter as number,
+      verse: row.verse as number,
+      text: row.text as string,
+      translation: row.translation as string,
+      reference: row.reference as string,
+      displayed_at: row.displayed_at as number | null,
+      created_at: row.created_at as number,
+    }))
+  } catch (error) {
+    console.error('Error searching verses locally:', error)
+    return []
   }
 }
 

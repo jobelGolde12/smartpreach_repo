@@ -8,6 +8,8 @@ interface AiSuggestion {
   reason: string
 }
 
+import { BibleVerse } from '@/lib/bibleApi'
+
 interface VerseSidebarProps {
   currentVerse?: {
     reference: string
@@ -18,6 +20,8 @@ interface VerseSidebarProps {
   onCloseMobile?: () => void
   isCollapsed?: boolean
   onToggleCollapse?: () => void
+  searchedVerses?: BibleVerse[]
+  onSelectVerse?: (verse: BibleVerse) => void
 }
 
 export default function VerseSidebar({
@@ -27,6 +31,8 @@ export default function VerseSidebar({
   onCloseMobile,
   isCollapsed = false,
   onToggleCollapse,
+  searchedVerses = [],
+  onSelectVerse,
 }: VerseSidebarProps) {
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -106,7 +112,7 @@ export default function VerseSidebar({
             {!isCollapsed && (
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-purple-500" />
-                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Related Scriptures</h2>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">{searchedVerses.length > 0 ? 'Search Results' : 'Related Scriptures'}</h2>
               </div>
             )}
             <div className="flex gap-2">
@@ -136,14 +142,34 @@ export default function VerseSidebar({
 
         {!isCollapsed && (
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-            {isLoading && (
+            {searchedVerses.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Search Results</h3>
+                {searchedVerses.map((verse, index) => (
+                  <button
+                    key={index}
+                    onClick={() => onSelectVerse && onSelectVerse(verse)}
+                    className="w-full text-left p-4 rounded-xl bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all group"
+                  >
+                    <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
+                      {verse.reference}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                      {verse.text}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {searchedVerses.length === 0 && isLoading && (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
                 <p className="text-gray-500 dark:text-gray-400 text-sm">Preparing Scriptures…</p>
               </div>
             )}
 
-            {!isLoading && error && (
+            {searchedVerses.length === 0 && !isLoading && error && (
               <div className="text-center py-12">
                 <p className="text-red-500 dark:text-red-400 mb-2">Error loading suggestions</p>
                 <button
@@ -155,15 +181,16 @@ export default function VerseSidebar({
               </div>
             )}
 
-            {!isLoading && !error && suggestions.length === 0 && currentVerse && (
+            {searchedVerses.length === 0 && !isLoading && !error && suggestions.length === 0 && currentVerse && (
               <div className="text-center py-12">
                 <Sparkles className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
                 <p className="text-gray-500 dark:text-gray-400">No suggestions available</p>
               </div>
             )}
 
-            {!isLoading && !error && suggestions.length > 0 && (
+            {searchedVerses.length === 0 && !isLoading && !error && suggestions.length > 0 && (
               <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">AI Suggestions</h3>
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={index}
@@ -181,7 +208,7 @@ export default function VerseSidebar({
               </div>
             )}
 
-            {!isLoading && !error && suggestions.length === 0 && !currentVerse && (
+            {searchedVerses.length === 0 && !isLoading && !error && suggestions.length === 0 && !currentVerse && (
               <div className="text-center py-12">
                 <Sparkles className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
                 <p className="text-gray-500 dark:text-gray-400">Select a verse to see AI suggestions</p>

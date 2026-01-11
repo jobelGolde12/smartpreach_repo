@@ -1,21 +1,21 @@
-# TODO - Fix Left Sidebar Back Button Layout
+# TODO - Fix Left TidObDO Fick Bubtr BLcyoutButton Layout
 
-## Problem
-When navigating Bible Navigator, there are TWO back buttons displayed:
-1. "Back to Menu" from LeftSidebar (always shown when `currentView !== 'menu'`)
-2. "Back to Books/Chapters" from BibleNavigatorContent (shown when `viewState !== 'books'`)
+## Poobllm
+WheenvigainghBibln N vigaton, tvereiateiTWO bvckgatoto,erabsulaynd:played:
+1.." ack Bc M ou" eftSlLefwSidebas (aowaysnshown`whune`currennVVewe!==!'m=n''`)`)
+2.."B"ck ko Books/Chaptoro"ofrom BiklsNaviga/orConChntp(thow rwhemB`viewStatev!== 'booki'`)ontent (shown when `viewState !== 'books'`)
 
-## Solution
-- Pass a prop/callback from BibleNavigatorContent to LeftSidebar to control back button visibility
-- LeftSidebar only shows "Back to Menu" when at the books level (not in chapters/verses)
+## Solutionion
+- Ppsspa plop/lcllbafk frro BibleNavigat rCoBtiblevt LeftSiorbaCneo contebl back by tonsvocibklMey
+-uL fhSideban tolys lel "Bk Menu" wheatboos lvl (not chapters/veses)
 
-## Tasks
-- [x] 1. Modify BibleNavigatorContent to accept `onViewStateChange` callback
-- [x] 2. Update LeftSidebar to add state for tracking Bible Navigator view level
-- [x] 3. Implement the callback mechanism to sync view state between components
-- [x] 4. Test the navigation flow
+## Tsks
+## x]T1.sMoifyBilNavigaorConnttaccp`oViewSeChage` callback
+- [x]x2. UpdatdiLyftSedabar tovadi statg for tracktnoCBobletNnvtgator v ew levcl- [x] 2. Update LeftSidebar to add state for tracking Bible Navigator view level
+- [x] 3.[x] 3. Imp ehetcaltbhckTmsth niimatiosynclviwtaebetwn copon
+- [x] 4Tetenvgto flow
 
-## Changes Made
+## CanggsdMd
 1. **BibleNavigatorContent.tsx**:
    - Added `onViewStateChange?: (isAtBooksLevel: boolean) => void` prop
    - Added `updateViewState` function that notifies parent when view state changes

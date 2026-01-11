@@ -8,7 +8,6 @@ import { BookOpen, ChevronRight, Loader2 } from 'lucide-react'
 interface BibleNavigatorContentProps {
   onSelectVerse: (verse: BibleVerse) => void
   isCollapsed?: boolean
-  onViewStateChange?: (isAtBooksLevel: boolean) => void
 }
 
 type ViewState = 'books' | 'chapters' | 'verses'
@@ -16,17 +15,9 @@ type ViewState = 'books' | 'chapters' | 'verses'
 export default function BibleNavigatorContent({
   onSelectVerse,
   isCollapsed = false,
-  onViewStateChange,
 }: BibleNavigatorContentProps) {
   const [viewState, setViewState] = useState<ViewState>('books')
 
-  // Notify parent when viewState changes
-  const updateViewState = (newState: ViewState) => {
-    setViewState(newState)
-    if (onViewStateChange) {
-      onViewStateChange(newState === 'books')
-    }
-  }
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null)
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null)
   const [verses, setVerses] = useState<BibleVerse[]>([])
@@ -53,13 +44,13 @@ export default function BibleNavigatorContent({
     setSelectedBook(book)
     setSelectedChapter(null)
     setVerses([])
-    updateViewState('chapters')
+    setViewState('chapters')
   }
 
   const handleChapterSelect = async (chapter: number) => {
     setSelectedChapter(chapter)
     setLoadingVerses(true)
-    updateViewState('verses')
+    setViewState('verses')
 
     try {
       const reference = `${selectedBook!.name} ${chapter}`
@@ -81,10 +72,10 @@ export default function BibleNavigatorContent({
 
   const handleBack = () => {
     if (viewState === 'verses') {
-      updateViewState('chapters')
+      setViewState('chapters')
       setVerses([])
     } else if (viewState === 'chapters') {
-      updateViewState('books')
+      setViewState('books')
       setSelectedBook(null)
       setSelectedChapter(null)
     }

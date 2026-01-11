@@ -39,6 +39,7 @@ export default function Home() {
   const [selectedLanguage, setSelectedLanguage] = useState('English')
 
   const handleVerseSelect = useCallback(async (verse: BibleVerse) => {
+    console.log('handleVerseSelect called with:', verse)
     setSelectedVerse(verse)
     setVerseContext({
       book: verse.book_name,
@@ -61,18 +62,20 @@ export default function Home() {
   }, [])
 
   const handleSearch = useCallback(async (query: string) => {
+    console.log('handleSearch called with:', query)
     setIsLoading(true)
     try {
       const response = await fetch(`/api/verses?q=${encodeURIComponent(query)}&type=auto`)
       const data = await response.json()
 
-      if (data.verses && data.verses.length > 0) {
-        setSearchedVerses(data.verses)
+      console.log('API response:', data)
 
-        if (data.verses.length === 1) {
-          await handleVerseSelect(data.verses[0])
-        }
+      if (data.verses && data.verses.length > 0) {
+        console.log('Setting searched verses and selecting first verse:', data.verses[0])
+        setSearchedVerses(data.verses)
+        await handleVerseSelect(data.verses[0])
       } else {
+        console.log('No verses found, checking local database')
         setSearchedVerses([])
       }
     } catch (error) {
@@ -110,7 +113,7 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <header className="h-10 flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl px-4 relative z-10 overflow-visible">
+      <header className="h-10 flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl px-5 py-[2rem] relative z-50 overflow-visible">
         <div className="h-full flex items-center justify-between w-full">
           <button
             onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
@@ -120,7 +123,7 @@ export default function Home() {
             {leftSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          <div className={`flex-1 transition-all duration-300 px-3 ${leftSidebarCollapsed || rightSidebarCollapsed ? 'max-w-2xl' : 'max-w-2xl'}`}>
+          <div className={`flex-1 transition-all duration-300 px-3 ${leftSidebarCollapsed || rightSidebarCollapsed ? 'max-w-lg' : 'max-w-lg'}`}>
             <SearchBar onSearch={handleSearch} isLoading={isLoading} />
           </div>
 
@@ -222,6 +225,8 @@ export default function Home() {
 
         <VerseSidebar
           currentVerse={selectedVerse ? { reference: selectedVerse.reference, text: selectedVerse.text } : null}
+          searchedVerses={searchedVerses}
+          onSelectVerse={handleVerseSelect}
           onSelectSuggestion={async (reference) => {
             const response = await fetch(`/api/verses?q=${encodeURIComponent(reference)}&type=auto`)
             const data = await response.json()
