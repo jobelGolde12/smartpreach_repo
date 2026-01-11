@@ -5,9 +5,25 @@ import Link from 'next/link'
 import SearchBar from '@/components/SearchBar'
 import VerseDisplay from '@/components/VerseDisplay'
 import VerseSidebar from '@/components/VerseSidebar'
-import BibleNavigator from '@/components/BibleNavigator'
+import LeftSidebar from '@/components/LeftSidebar'
 import { BibleVerse } from '@/lib/bibleApi'
-import { Menu, X, BookOpen, User, Settings, MoreVertical, Languages } from 'lucide-react'
+import { Menu, X, BookOpen, User, Settings, Languages } from 'lucide-react'
+
+function NineDotsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="6" cy="5" r="1.5" />
+      <circle cx="12" cy="5" r="1.5" />
+      <circle cx="18" cy="5" r="1.5" />
+      <circle cx="6" cy="12" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="18" cy="12" r="1.5" />
+      <circle cx="6" cy="19" r="1.5" />
+      <circle cx="12" cy="19" r="1.5" />
+      <circle cx="18" cy="19" r="1.5" />
+    </svg>
+  )
+}
 
 export default function Home() {
   const [searchedVerses, setSearchedVerses] = useState<BibleVerse[]>([])
@@ -19,6 +35,7 @@ export default function Home() {
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false)
   const [verseContext, setVerseContext] = useState<{ book: string; chapter: number; verse: number } | null>(null)
   const [moreOptionsOpen, setMoreOptionsOpen] = useState(false)
+  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState('English')
 
   const handleVerseSelect = useCallback(async (verse: BibleVerse) => {
@@ -98,7 +115,7 @@ export default function Home() {
           <button
             onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
             className="md:hidden p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            aria-label="Toggle Bible Navigator"
+            aria-label="Toggle Left Sidebar"
           >
             {leftSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -122,7 +139,7 @@ export default function Home() {
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="More options"
               >
-                <MoreVertical className="w-5 h-5" />
+                <NineDotsIcon className="w-5 h-5" />
               </button>
             </div>
             <button
@@ -137,38 +154,52 @@ export default function Home() {
       </header>
       {moreOptionsOpen && (
         <>
-          <div onClick={() => setMoreOptionsOpen(false)} className="fixed inset-0 z-[9999]" />
-          <div className="fixed right-4 lg:right-[15px] top-12 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-[10000]">
-            <div className="px-3 py-2 flex items-center gap-2">
-              <Languages className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-              <span className="text-sm text-gray-700 dark:text-gray-300">Convert to</span>
+          <div onClick={() => { setMoreOptionsOpen(false); setLanguageDropdownOpen(false) }} className="fixed inset-0 z-[9999]" />
+          <div className="fixed right-4 lg:right-[15px] top-12 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[10000]">
+            <div
+              className="px-6 py-4 flex items-center gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onMouseEnter={() => setLanguageDropdownOpen(true)}
+              onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
+            >
+              <Languages className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <span className="text-base text-gray-700 dark:text-gray-300">Convert to</span>
             </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setSelectedLanguage('English')
-                setMoreOptionsOpen(false)
-              }}
-              className="w-full px-6 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              English
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setSelectedLanguage('Tagalog')
-                setMoreOptionsOpen(false)
-              }}
-              className="w-full px-6 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              Tagalog
-            </button>
+            {languageDropdownOpen && (
+              <div
+                className="absolute right-full top-0 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-[10001]"
+                onMouseEnter={() => setLanguageDropdownOpen(true)}
+                onMouseLeave={() => setLanguageDropdownOpen(false)}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedLanguage('English')
+                    setMoreOptionsOpen(false)
+                    setLanguageDropdownOpen(false)
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  English
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedLanguage('Tagalog')
+                    setMoreOptionsOpen(false)
+                    setLanguageDropdownOpen(false)
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  Tagalog
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}
 
       <div className="flex-1 flex overflow-hidden">
-        <BibleNavigator
+        <LeftSidebar
           onSelectVerse={handleVerseSelect}
           isLoading={isLoading}
           isMobileOpen={leftSidebarOpen}
