@@ -221,9 +221,14 @@ export default function Home() {
         </div>
 
         <VerseSidebar
-          searchedVerses={searchedVerses}
-          onSelectVerse={handleVerseSelect}
-          activeVerse={selectedVerse}
+          currentVerse={selectedVerse ? { reference: selectedVerse.reference, text: selectedVerse.text } : null}
+          onSelectSuggestion={async (reference) => {
+            const response = await fetch(`/api/verses?q=${encodeURIComponent(reference)}&type=auto`)
+            const data = await response.json()
+            if (data.verses?.length > 0) {
+              await handleVerseSelect(data.verses[0])
+            }
+          }}
           isMobileOpen={rightSidebarOpen}
           onCloseMobile={() => setRightSidebarOpen(false)}
           isCollapsed={rightSidebarCollapsed}

@@ -1,140 +1,81 @@
 'use client'
 
-import { BibleVerse } from '@/lib/bibleApi'
-import { getRecentVerses, getFavorites, addToFavorites, removeFromFavorites, Verse } from '@/lib/serverActions'
 import { useEffect, useState } from 'react'
-import { Clock, Heart, HeartOff, X, ChevronRight, ChevronLeft } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles, Loader2, X } from 'lucide-react'
+
+interface AiSuggestion {
+  reference: string
+  reason: string
+}
 
 interface VerseSidebarProps {
-  searchedVerses: BibleVerse[]
-  onSelectVerse: (verse: BibleVerse) => void
-  activeVerse?: BibleVerse | null
+  currentVerse?: {
+    reference: string
+    text: string
+  } | null
+  onSelectSuggestion?: (reference: string) => void
   isMobileOpen?: boolean
   onCloseMobile?: () => void
   isCollapsed?: boolean
   onToggleCollapse?: () => void
 }
 
-type DisplayVerse = BibleVerse | Verse
-
-const getBookName = (verse: DisplayVerse): string => {
-  return 'book_name' in verse ? verse.book_name : verse.book
-}
-
 export default function VerseSidebar({
-  searchedVerses,
-  onSelectVerse,
-  activeVerse,
+  currentVerse,
+  onSelectSuggestion,
   isMobileOpen = false,
   onCloseMobile,
   isCollapsed = false,
   onToggleCollapse,
 }: VerseSidebarProps) {
-  const [activeTab, setActiveTab] = useState<'search' | 'recent' | 'favorites'>('search')
-  const [recentVerses, setRecentVerses] = useState<Verse[]>([])
-  const [favoriteVerses, setFavoriteVerses] = useState<Verse[]>([])
-
-  const loadRecentVerses = async () => {
-    const verses = await getRecentVerses()
-    setRecentVerses(verses)
-  }
-
-  const loadFavorites = async () => {
-    const verses = await getFavorites()
-    setFavoriteVerses(verses)
-  }
+  const [suggestions, setSuggestions] = useState<AiSuggestion[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    ;(async () => {
-      await loadRecentVerses()
-      await loadFavorites()
-    })()
-  }, [])
-
-  const handleToggleFavorite = async (verse: DisplayVerse) => {
-    const verseId = 'id' in verse ? verse.id : null
-
-    if (!verseId) return
-
-    const isFavorited = favoriteVerses.some((v) => v.reference === verse.reference)
-
-    if (isFavorited) {
-      await removeFromFavorites(verseId)
-      loadFavorites()
+    if (currentVerse?.reference && currentVerse?.text) {
+      fetchSuggestions()
     } else {
-      await addToFavorites(verseId)
-      loadFavorites()
+      setSuggestions([])
+    }
+  }, [currentVerse?.reference, currentVerse?.text])
+
+  const fetchSuggestions = async () => {
+    if (!currentVerse?.reference || !currentVerse?.text) return
+
+    setIsLoading(true)
+    setError(null)
+    setSuggestions([])
+
+    try {
+      const response = await fetch('/api/ai-suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reference: currentVerse.reference,
+          text: currentVerse.text,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get suggestions')
+      }
+
+      setSuggestions(data.suggestions || [])
+    } catch (err) {
+      console.error('Error fetching suggestions:', err)
+      setError('Failed to load suggestions')
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const isFavorite = (verse: Verse | BibleVerse) => {
-    return favoriteVerses.some((v) => v.reference === verse.reference)
-  }
-
-  const renderVerseItem = (verse: DisplayVerse) => {
-    const isBibleVerse = 'book_name' in verse
-    const bibleVerse: BibleVerse = isBibleVerse
-      ? verse
-      : {
-          book_name: verse.book,
-          book_id: '',
-          chapter: verse.chapter,
-          verse: verse.verse,
-          text: verse.text,
-          reference: verse.reference,
-        }
-
-    return (
-      <button
-        key={verse.reference + verse.verse}
-        onClick={() => {
-          onSelectVerse(bibleVerse)
-          if (onCloseMobile) onCloseMobile()
-        }}
-        className={`w-full text-left p-4 rounded-xl transition-all mb-3 group ${
-          activeVerse?.reference === verse.reference && activeVerse.verse === verse.verse
-            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-            : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
-        }`}
-      >
-        <div className="flex justify-between items-start gap-3">
-          <div className="flex-1 min-w-0">
-            <p
-              className={`font-semibold mb-1 ${
-                activeVerse?.reference === verse.reference
-                  ? 'text-white'
-                  : 'text-gray-800 dark:text-gray-200'
-              }`}
-            >
-              {getBookName(verse)} {verse.chapter}:{verse.verse}
-            </p>
-            <p
-              className={`text-sm line-clamp-2 ${
-                activeVerse?.reference === verse.reference
-                  ? 'text-blue-100'
-                  : 'text-gray-600 dark:text-gray-400'
-              }`}
-            >
-              {verse.text}
-            </p>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              handleToggleFavorite(verse)
-            }}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
-            aria-label={isFavorite(verse) ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            {isFavorite(verse) ? (
-              <Heart className="w-5 h-5 text-red-500 fill-current" />
-            ) : (
-              <HeartOff className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-        </div>
-      </button>
-    )
+  const handleSuggestionClick = async (reference: string) => {
+    if (onSelectSuggestion) {
+      onSelectSuggestion(reference)
+    }
   }
 
   return (
@@ -161,9 +102,12 @@ export default function VerseSidebar({
         `}
       >
         <div className="p-4 border-b border-gray-200/50 dark:border-gray-800/50">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             {!isCollapsed && (
-              <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Verses</h2>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-500" />
+                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Related Scriptures</h2>
+              </div>
             )}
             <div className="flex gap-2">
               {onToggleCollapse && (
@@ -188,91 +132,59 @@ export default function VerseSidebar({
               </button>
             </div>
           </div>
-
-          {!isCollapsed && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setActiveTab('search')}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'search'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-              >
-                Search
-              </button>
-              <button
-                onClick={() => setActiveTab('recent')}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-                  activeTab === 'recent'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-              >
-                <Clock className="w-4 h-4" />
-                Recent
-              </button>
-              <button
-                onClick={() => setActiveTab('favorites')}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-                  activeTab === 'favorites'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-              >
-                <Heart className="w-4 h-4" />
-                Favorites
-              </button>
-            </div>
-          )}
         </div>
 
         {!isCollapsed && (
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-            {activeTab === 'search' && searchedVerses.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-                  Search Results
-                </p>
-                {searchedVerses.map((verse) => renderVerseItem(verse))}
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Preparing Scriptures…</p>
               </div>
             )}
 
-            {activeTab === 'search' && searchedVerses.length === 0 && (
+            {!isLoading && error && (
               <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">Search for a verse to see results</p>
+                <p className="text-red-500 dark:text-red-400 mb-2">Error loading suggestions</p>
+                <button
+                  onClick={fetchSuggestions}
+                  className="text-blue-500 hover:text-blue-600 text-sm"
+                >
+                  Try again
+                </button>
               </div>
             )}
 
-            {activeTab === 'recent' && recentVerses.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-                  Recently Used
-                </p>
-                {recentVerses.map((verse) => renderVerseItem(verse))}
-              </div>
-            )}
-
-            {activeTab === 'recent' && recentVerses.length === 0 && (
+            {!isLoading && !error && suggestions.length === 0 && currentVerse && (
               <div className="text-center py-12">
-                <Clock className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-                <p className="text-gray-500 dark:text-gray-400">No recent verses yet</p>
+                <Sparkles className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400">No suggestions available</p>
               </div>
             )}
 
-            {activeTab === 'favorites' && favoriteVerses.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-                  Favorite Verses
-                </p>
-                {favoriteVerses.map((verse) => renderVerseItem(verse))}
+            {!isLoading && !error && suggestions.length > 0 && (
+              <div className="space-y-2">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion.reference)}
+                    className="w-full text-left p-4 rounded-xl bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all group"
+                  >
+                    <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
+                      {suggestion.reference}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {suggestion.reason}
+                    </p>
+                  </button>
+                ))}
               </div>
             )}
 
-            {activeTab === 'favorites' && favoriteVerses.length === 0 && (
+            {!isLoading && !error && suggestions.length === 0 && !currentVerse && (
               <div className="text-center py-12">
-                <Heart className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-                <p className="text-gray-500 dark:text-gray-400">No favorite verses yet</p>
+                <Sparkles className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400">Select a verse to see AI suggestions</p>
               </div>
             )}
           </div>
@@ -281,9 +193,9 @@ export default function VerseSidebar({
         {isCollapsed && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <Clock className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
+              <Sparkles className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
               <p className="text-xs text-gray-400 writing-mode-vertical" style={{ writingMode: 'vertical-rl' }}>
-                Verses
+                AI
               </p>
             </div>
           </div>
