@@ -97,18 +97,16 @@ export default function BibleNavigatorContent({
           </button>
         )}
 
-        {viewState === 'books' && (
-          <div className="relative mb-3">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search books..."
-              className="w-full px-4 py-2 pl-10 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all dark:text-white"
-            />
-            <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          </div>
-        )}
+        <div className="relative mb-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search books..."
+            className="w-full px-4 py-2 pl-10 text-sm rounded-lg bg-transparent dark:text-white placeholder-gray-400 outline-none transition-all"
+          />
+          <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        </div>
 
         {viewState === 'books' && (
           <div className="flex gap-2">
