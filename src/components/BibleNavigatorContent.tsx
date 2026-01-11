@@ -5,12 +5,12 @@ import { BIBLE_BOOKS, BibleBook } from '@/lib/bibleData'
 import { BibleVerse } from '@/lib/bibleApi'
 import { BookOpen, ChevronRight, Loader2 } from 'lucide-react'
 
+type ViewState = 'books' | 'chapters' | 'verses'
+
 interface BibleNavigatorContentProps {
   onSelectVerse: (verse: BibleVerse) => void
   isCollapsed?: boolean
 }
-
-type ViewState = 'books' | 'chapters' | 'verses'
 
 export default function BibleNavigatorContent({
   onSelectVerse,
@@ -98,50 +98,52 @@ export default function BibleNavigatorContent({
           </button>
         )}
 
-        <div className="relative mb-3">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search books..."
-            className="w-full px-4 py-2 pl-10 text-sm rounded-lg bg-transparent dark:text-white placeholder-gray-400 outline-none transition-all"
-          />
-          <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        </div>
-
         {viewState === 'books' && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setSelectedTestament('All')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                selectedTestament === 'All'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setSelectedTestament('Old')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                selectedTestament === 'Old'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              Old
-            </button>
-            <button
-              onClick={() => setSelectedTestament('New')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                selectedTestament === 'New'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              New
-            </button>
-          </div>
+          <>
+            <div className="relative mb-3">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search books..."
+                className="w-full px-4 py-2 pl-10 text-sm rounded-lg bg-transparent dark:text-white placeholder-gray-400 outline-none transition-all"
+              />
+              <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSelectedTestament('All')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  selectedTestament === 'All'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setSelectedTestament('Old')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  selectedTestament === 'Old'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                Old
+              </button>
+              <button
+                onClick={() => setSelectedTestament('New')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  selectedTestament === 'New'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                New
+              </button>
+            </div>
+          </>
         )}
       </div>
 
@@ -151,7 +153,7 @@ export default function BibleNavigatorContent({
             {Object.entries(groupedBooks).map(([testament, books]) =>
               books.length > 0 && (
                 <div key={testament}>
-                  <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl py-2">
+                  <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl py-2">
                     {testament} Testament
                   </h3>
                   <div className="space-y-1">
