@@ -19,6 +19,18 @@ export interface BibleResponse {
 const BIBLE_API_BASE = 'https://bible-api.com'
 
 export async function fetchVerse(reference: string): Promise<BibleVerse[]> {
+  // Try JSON data first
+  try {
+    const { findVerseByReference } = await import('./bibleJson')
+    const verse = await findVerseByReference(reference)
+    if (verse) {
+      return [verse]
+    }
+  } catch (error) {
+    console.warn('Failed to load from JSON, falling back to API:', error)
+  }
+
+  // Fallback to API
   const response = await fetch(`${BIBLE_API_BASE}/${encodeURIComponent(reference)}?translation=kjv`, {
     cache: 'no-store',
   })
@@ -214,12 +226,25 @@ const KEYWORD_TO_VERSE_MAP: Record<string, BibleVerse[]> = {
 
 export async function searchByKeyword(keyword: string): Promise<BibleVerse[]> {
   const normalizedKeyword = keyword.toLowerCase().trim()
-  
+
+  // Check predefined keyword map first
   const matchingVerses = KEYWORD_TO_VERSE_MAP[normalizedKeyword]
   if (matchingVerses) {
     return matchingVerses
   }
 
+  // Try JSON search
+  try {
+    const { searchVersesByKeyword } = await import('./bibleJson')
+    const results = await searchVersesByKeyword(keyword)
+    if (results.length > 0) {
+      return results
+    }
+  } catch (error) {
+    console.warn('Failed to search JSON data, falling back to API:', error)
+  }
+
+  // Fallback to API
   try {
     const response = await fetch(`https://bible-api.com/${encodeURIComponent(keyword)}?translation=kjv`, {
       cache: 'no-store',

@@ -1,21 +1,49 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, forwardRef, useImperativeHandle } from 'react'
 import { BIBLE_BOOKS, BibleBook } from '@/lib/bibleData'
 import { BibleVerse } from '@/lib/bibleApi'
-import { BookOpen, ChevronRight, Loader2 } from 'lucide-react'
+import { BookOpen, Loader2 } from 'lucide-react'
 
 type ViewState = 'books' | 'chapters' | 'verses'
 
 interface BibleNavigatorContentProps {
   onSelectVerse: (verse: BibleVerse) => void
   isCollapsed?: boolean
+  onViewChange?: (view: ViewState) => void
+  onExitBibleNavigator?: () => void
 }
 
-export default function BibleNavigatorContent({
+export interface BibleNavigatorRef {
+  handleBack: () => void
+}
+
+const BibleNavigatorContent = forwardRef<BibleNavigatorRef, BibleNavigatorContentProps>(({
   onSelectVerse,
   isCollapsed = false,
-}: BibleNavigatorContentProps) {
+  onViewChange,
+  onExitBibleNavigator,
+}, ref) => {
+
+  const handleBack = () => {
+    if (viewState === 'verses') {
+      setViewState('chapters')
+      setVerses([])
+      onViewChange?.('chapters')
+    } else if (viewState === 'chapters') {
+      setViewState('books')
+      setSelectedBook(null)
+      setSelectedChapter(null)
+      onViewChange?.('books')
+    } else {
+      // At books level, call the parent back handler
+      onExitBibleNavigator?.()
+    }
+  }
+
+  useImperativeHandle(ref, () => ({
+    handleBack,
+  }))
   const [viewState, setViewState] = useState<ViewState>('books')
 
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null)
@@ -45,12 +73,14 @@ export default function BibleNavigatorContent({
     setSelectedChapter(null)
     setVerses([])
     setViewState('chapters')
+    onViewChange?.('chapters')
   }
 
   const handleChapterSelect = async (chapter: number) => {
     setSelectedChapter(chapter)
     setLoadingVerses(true)
     setViewState('verses')
+    onViewChange?.('verses')
 
     try {
       const reference = `${selectedBook!.name} ${chapter}`
@@ -70,16 +100,7 @@ export default function BibleNavigatorContent({
     }
   }
 
-  const handleBack = () => {
-    if (viewState === 'verses') {
-      setViewState('chapters')
-      setVerses([])
-    } else if (viewState === 'chapters') {
-      setViewState('books')
-      setSelectedBook(null)
-      setSelectedChapter(null)
-    }
-  }
+
 
   const handleVerseClick = (verse: BibleVerse) => {
     onSelectVerse(verse)
@@ -87,16 +108,7 @@ export default function BibleNavigatorContent({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="p-4 border-b border-gray-200/50 dark:border-gray-800/50">
-        {viewState !== 'books' && (
-          <button
-            onClick={handleBack}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            <ChevronRight className="w-4 h-4 rotate-180" />
-            {viewState === 'verses' ? 'Back to Chapters' : 'Back to Books'}
-          </button>
-        )}
+      <div className={`${viewState === 'books' ? 'p-4' : ''} border-b border-gray-200/50 dark:border-gray-800/50`}>
 
         {viewState === 'books' && (
           <>
@@ -283,4 +295,8 @@ export default function BibleNavigatorContent({
       `}</style>
     </div>
   )
-}
+})
+
+BibleNavigatorContent.displayName = 'BibleNavigatorContent'
+
+export default BibleNavigatorContent

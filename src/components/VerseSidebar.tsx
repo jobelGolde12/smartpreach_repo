@@ -95,7 +95,7 @@ export default function VerseSidebar({
 
       <aside
         className={`
-          ${isCollapsed ? 'w-16' : 'w-[25%] min-w-[320px]'}
+          ${isCollapsed ? 'w-16' : 'w-72'}
           bg-white/80 dark:bg-gray-900/80
           backdrop-blur-xl
           border-l border-gray-200/50 dark:border-gray-800/50

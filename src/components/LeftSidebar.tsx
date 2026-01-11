@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { BibleVerse } from '@/lib/bibleApi'
-import { ChevronLeft, ChevronRight, X, BookOpen, Layout, Settings, FileText } from 'lucide-react'
-import BibleNavigatorContent from './BibleNavigatorContent'
+import { ChevronLeft, ChevronRight, X, BookOpen, Layout, Settings, FileText, ArrowLeft } from 'lucide-react'
+import BibleNavigatorContent, { BibleNavigatorRef } from './BibleNavigatorContent'
 
 interface LeftSidebarProps {
   onSelectVerse: (verse: BibleVerse) => void
@@ -13,6 +13,8 @@ interface LeftSidebarProps {
   isCollapsed?: boolean
   onToggleCollapse?: () => void
 }
+
+type BibleNavView = 'books' | 'chapters' | 'verses'
 
 type SidebarView = 'menu' | 'bible-navigator' | 'notes' | 'settings'
 
@@ -24,6 +26,8 @@ export default function LeftSidebar({
   onToggleCollapse,
 }: LeftSidebarProps) {
   const [currentView, setCurrentView] = useState<SidebarView>('menu')
+  const [bibleNavView, setBibleNavView] = useState<BibleNavView>('books')
+  const bibleNavigatorRef = useRef<BibleNavigatorRef>(null)
 
   const menuItems = [
     { id: 'bible-navigator' as SidebarView, label: 'Bible Navigator', icon: BookOpen },
@@ -40,7 +44,11 @@ export default function LeftSidebar({
   }
 
   const handleBackToMenu = () => {
-    setCurrentView('menu')
+    if (currentView === 'bible-navigator') {
+      bibleNavigatorRef.current?.handleBack()
+    } else {
+      setCurrentView('menu')
+    }
   }
 
   return (
@@ -75,15 +83,18 @@ export default function LeftSidebar({
                     <Layout className="w-5 h-5" />
                     Sidebar
                   </h2>
-                ) : (
-                  <button
-                    onClick={handleBackToMenu}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4 rotate-180" />
-                    Back to Menu
-                  </button>
-                )}
+                 ) : (
+                    <button
+                      onClick={handleBackToMenu}
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      {currentView === 'bible-navigator'
+                        ? (bibleNavView === 'verses' ? 'Back to Chapters' : 'Back to Books')
+                        : 'Back to Menu'
+                      }
+                    </button>
+                 )}
               </>
             )}
             <div className="flex gap-2">
@@ -133,9 +144,12 @@ export default function LeftSidebar({
             )}
 
             {currentView === 'bible-navigator' && (
-              <BibleNavigatorContent 
-                onSelectVerse={onSelectVerse} 
+              <BibleNavigatorContent
+                ref={bibleNavigatorRef}
+                onSelectVerse={onSelectVerse}
                 isCollapsed={isCollapsed}
+                onViewChange={setBibleNavView}
+                onExitBibleNavigator={handleBackToMenu}
               />
             )}
 
