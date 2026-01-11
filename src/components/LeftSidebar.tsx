@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { BibleVerse } from '@/lib/bibleApi'
-import { ChevronLeft, ChevronRight, X, BookOpen, Layout, Settings, Home, FileText } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, BookOpen, Layout, Settings, FileText } from 'lucide-react'
 import BibleNavigatorContent from './BibleNavigatorContent'
 
 interface LeftSidebarProps {
@@ -54,7 +54,7 @@ export default function LeftSidebar({
 
       <aside
         className={`
-          ${isCollapsed ? 'w-16' : 'w-[25%] min-w-[320px]'}
+          ${isCollapsed ? 'w-16' : 'w-72'}
           bg-white/80 dark:bg-gray-900/80
           backdrop-blur-xl
           border-r border-gray-200/50 dark:border-gray-800/50

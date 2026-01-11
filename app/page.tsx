@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import SearchBar from '@/components/SearchBar'
 import VerseDisplay from '@/components/VerseDisplay'
 import VerseSidebar from '@/components/VerseSidebar'
 import LeftSidebar from '@/components/LeftSidebar'
 import { BibleVerse } from '@/lib/bibleApi'
-import { Menu, X, BookOpen, User, Settings, Languages } from 'lucide-react'
+import { Menu, X, BookOpen, User, Settings, Languages, Mic, MicOff } from 'lucide-react'
 
 function NineDotsIcon({ className }: { className?: string }) {
   return (
@@ -37,6 +37,21 @@ export default function Home() {
   const [moreOptionsOpen, setMoreOptionsOpen] = useState(false)
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState('English')
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<any>(null)
+  const isListeningRef = useRef(false)
+
+  useEffect(() => {
+    isListeningRef.current = isListening
+  }, [isListening])
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
 
   const handleVerseSelect = useCallback(async (verse: BibleVerse) => {
     console.log('handleVerseSelect called with:', verse)
@@ -111,6 +126,90 @@ export default function Home() {
   const canGoNext = verseContext !== null
   const canGoPrevious = verseContext !== null && verseContext.verse > 1
 
+  const extractVerseFromText = (text: string): string | null => {
+    const lowerText = text.toLowerCase()
+
+    const patterns = [
+      /\b([1-3]?\s*\w+)\s+(\d+):(\d+)\b/i,
+      /\b([1-3]?\s*\w+)\s+chapter\s+(\d+)\s+verse\s+(\d+)\b/i,
+      /\b([1-3]?\s*\w+)\s+(\d+)\s+(\d+)\b/i,
+      /\b(\w+)\s+(\d+):(\d+)\b/i,
+      /\b(\w+)\s+(\d+)\b/i,
+    ]
+
+    for (const pattern of patterns) {
+      const match = text.match(pattern)
+      if (match) {
+        const book = match[1].replace(/\s+/g, ' ').trim()
+        if (match[3]) {
+          return `${book} ${match[2]}:${match[3]}`
+        } else {
+          return `${book} ${match[2]}`
+        }
+      }
+    }
+
+    return null
+  }
+
+  const toggleMicListening = () => {
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+        recognitionRef.current = null
+      }
+      setIsListening(false)
+    } else {
+      if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        const recognition = new SpeechRecognition()
+        recognition.lang = 'en-US'
+        recognition.continuous = true
+        recognition.interimResults = true
+
+        recognition.onstart = () => {
+          setIsListening(true)
+        }
+
+        recognition.onresult = (event: any) => {
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript
+
+            const verseRef = extractVerseFromText(transcript)
+            if (verseRef) {
+              console.log('Detected verse:', verseRef)
+              handleSearch(verseRef)
+
+              if (recognitionRef.current) {
+                recognitionRef.current.stop()
+                setTimeout(() => {
+                  if (isListeningRef.current && recognitionRef.current) {
+                    recognitionRef.current.start()
+                  }
+                }, 100)
+              }
+            }
+          }
+        }
+
+        recognition.onerror = () => {
+          setIsListening(false)
+        }
+
+        recognition.onend = () => {
+          if (isListeningRef.current) {
+            recognition.start()
+          }
+        }
+
+        recognitionRef.current = recognition
+        recognition.start()
+      } else {
+        alert('Speech recognition is not supported in your browser')
+      }
+    }
+  }
+
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
       <header className="h-10 flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl px-5 py-[2rem] relative z-50 overflow-visible">
@@ -128,6 +227,18 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMicListening}
+              className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isListening ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : ''}`}
+              aria-label={isListening ? 'Stop listening' : 'Start listening'}
+            >
+              {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
+            {isListening && (
+              <span className="text-sm font-medium text-red-600 dark:text-red-400 animate-pulse">
+                Listening...
+              </span>
+            )}
             <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Profile">
               <User className="w-5 h-5" />
             </button>
