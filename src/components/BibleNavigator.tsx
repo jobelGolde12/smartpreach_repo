@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { BIBLE_BOOKS, BibleBook } from '@/lib/bibleData'
 import { BibleVerse } from '@/lib/bibleApi'
-import { BookOpen, ChevronRight, ChevronLeft, Loader2, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { BookOpen, ChevronRight, ChevronLeft, Loader2, X } from 'lucide-react'
 
 interface BibleNavigatorProps {
   onSelectVerse: (verse: BibleVerse) => void
@@ -18,7 +18,6 @@ type ViewState = 'books' | 'chapters' | 'verses'
 
 export default function BibleNavigator({
   onSelectVerse,
-  isLoading,
   isMobileOpen = false,
   onCloseMobile,
   isCollapsed = false,
@@ -93,14 +92,6 @@ export default function BibleNavigator({
     if (onCloseMobile) {
       onCloseMobile()
     }
-  }
-
-  const resetView = () => {
-    setViewState('books')
-    setSelectedBook(null)
-    setSelectedChapter(null)
-    setVerses([])
-    setSearchQuery('')
   }
 
   return (

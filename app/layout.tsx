@@ -25,8 +25,42 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme');
+                  var resolvedTheme = 'light';
+                  
+                  if (theme === 'dark') {
+                    resolvedTheme = 'dark';
+                  } else if (theme === 'light') {
+                    resolvedTheme = 'light';
+                  } else if (theme === 'system' || !theme) {
+                    resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  }
+                  
+                  document.documentElement.classList.remove('dark', 'light');
+                  document.documentElement.classList.add(resolvedTheme);
+                  
+                  if (resolvedTheme === 'dark') {
+                    document.documentElement.style.setProperty('--background', '#0a0a0a');
+                    document.documentElement.style.setProperty('--foreground', '#ededed');
+                  } else {
+                    document.documentElement.style.setProperty('--background', '#ffffff');
+                    document.documentElement.style.setProperty('--foreground', '#171717');
+                  }
+                } catch(e) {}
+              })();
+            `
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <ThemeProvider>
           {children}

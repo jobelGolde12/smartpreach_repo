@@ -7,7 +7,7 @@ import VerseDisplay from '@/components/VerseDisplay'
 import VerseSidebar from '@/components/VerseSidebar'
 import BibleNavigator from '@/components/BibleNavigator'
 import { BibleVerse } from '@/lib/bibleApi'
-import { Menu, X, BookOpen, User, Settings } from 'lucide-react'
+import { Menu, X, BookOpen, User, Settings, MoreVertical, Languages } from 'lucide-react'
 
 export default function Home() {
   const [searchedVerses, setSearchedVerses] = useState<BibleVerse[]>([])
@@ -18,6 +18,8 @@ export default function Home() {
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false)
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false)
   const [verseContext, setVerseContext] = useState<{ book: string; chapter: number; verse: number } | null>(null)
+  const [moreOptionsOpen, setMoreOptionsOpen] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState('English')
 
   const handleVerseSelect = useCallback(async (verse: BibleVerse) => {
     setSelectedVerse(verse)
@@ -91,7 +93,7 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <header className="h-10 flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl px-4">
+      <header className="h-10 flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl px-4 relative z-10 overflow-visible">
         <div className="h-full flex items-center justify-between w-full">
           <button
             onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
@@ -112,6 +114,17 @@ export default function Home() {
             <Link href="/settings" className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Settings">
               <Settings className="w-5 h-5" />
             </Link>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setMoreOptionsOpen(prev => !prev)
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="More options"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            </div>
             <button
               onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
               className="md:hidden p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -122,6 +135,37 @@ export default function Home() {
           </div>
         </div>
       </header>
+      {moreOptionsOpen && (
+        <>
+          <div onClick={() => setMoreOptionsOpen(false)} className="fixed inset-0 z-[9999]" />
+          <div className="fixed right-4 lg:right-[15px] top-12 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-[10000]">
+            <div className="px-3 py-2 flex items-center gap-2">
+              <Languages className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm text-gray-700 dark:text-gray-300">Convert to</span>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedLanguage('English')
+                setMoreOptionsOpen(false)
+              }}
+              className="w-full px-6 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              English
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedLanguage('Tagalog')
+                setMoreOptionsOpen(false)
+              }}
+              className="w-full px-6 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Tagalog
+            </button>
+          </div>
+        </>
+      )}
 
       <div className="flex-1 flex overflow-hidden">
         <BibleNavigator
@@ -141,6 +185,7 @@ export default function Home() {
             onPreviousVerse={handlePreviousVerse}
             canGoNext={canGoNext}
             canGoPrevious={canGoPrevious}
+            selectedLanguage={selectedLanguage}
           />
         </div>
 
