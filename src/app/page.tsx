@@ -6,6 +6,7 @@ import SearchBar from '@/components/SearchBar'
 import VerseDisplay from '@/components/VerseDisplay'
 import VerseSidebar from '@/components/VerseSidebar'
 import LeftSidebar from '@/components/LeftSidebar'
+import NotesModal from '@/components/NotesModal'
 import { BibleVerse } from '@/lib/bibleApi'
 import { Menu, X, BookOpen, User, Settings, Languages, Mic, MicOff } from 'lucide-react'
 
@@ -25,6 +26,14 @@ function NineDotsIcon({ className }: { className?: string }) {
   )
 }
 
+interface Note {
+  id: string
+  title: string
+  content: string
+  createdAt: string
+  verses: string[]
+}
+
 export default function Home() {
   const [searchedVerses, setSearchedVerses] = useState<BibleVerse[]>([])
   const [selectedVerse, setSelectedVerse] = useState<BibleVerse | null>(null)
@@ -40,6 +49,8 @@ export default function Home() {
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<any>(null)
   const isListeningRef = useRef(false)
+  const [notes, setNotes] = useState<Note[]>([])
+  const [notesModalOpen, setNotesModalOpen] = useState(false)
 
   useEffect(() => {
     isListeningRef.current = isListening
@@ -49,6 +60,17 @@ export default function Home() {
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const savedNotes = localStorage.getItem('bibleNotes')
+    if (savedNotes) {
+      try {
+        setNotes(JSON.parse(savedNotes))
+      } catch (error) {
+        console.error('Error loading notes:', error)
       }
     }
   }, [])
@@ -125,6 +147,36 @@ export default function Home() {
 
   const canGoNext = verseContext !== null
   const canGoPrevious = verseContext !== null && verseContext.verse > 1
+
+  const saveNotesToStorage = (newNotes: Note[]) => {
+    localStorage.setItem('bibleNotes', JSON.stringify(newNotes))
+    setNotes(newNotes)
+  }
+
+  const handleSaveNote = (noteData: Omit<Note, 'id' | 'createdAt'> & { id?: string }) => {
+    const now = new Date().toISOString()
+    if (noteData.id) {
+      // edit
+      const updatedNotes = notes.map(note =>
+        note.id === noteData.id
+          ? { ...note, ...noteData, updatedAt: now }
+          : note
+      )
+      saveNotesToStorage(updatedNotes)
+    } else {
+      // new
+      const newNote: Note = {
+        id: Date.now().toString(),
+        ...noteData,
+        createdAt: now,
+      }
+      saveNotesToStorage([...notes, newNote])
+    }
+  }
+
+  const handleOpenNotesModal = () => {
+    setNotesModalOpen(true)
+  }
 
   const extractVerseFromText = (text: string): string | null => {
     const lowerText = text.toLowerCase()
@@ -320,6 +372,7 @@ export default function Home() {
           onCloseMobile={() => setLeftSidebarOpen(false)}
           isCollapsed={leftSidebarCollapsed}
           onToggleCollapse={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
+          onOpenNotesModal={handleOpenNotesModal}
         />
 
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -351,6 +404,13 @@ export default function Home() {
           onToggleCollapse={() => setRightSidebarCollapsed(!rightSidebarCollapsed)}
         />
       </div>
+
+      <NotesModal
+        isOpen={notesModalOpen}
+        onClose={() => setNotesModalOpen(false)}
+        notes={notes}
+        onSave={handleSaveNote}
+      />
     </div>
   )
 }

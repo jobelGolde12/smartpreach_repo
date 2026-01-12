@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { BibleVerse } from '@/lib/bibleApi'
-import { ChevronLeft, ChevronRight, X, BookOpen, Layout, Settings, FileText, ArrowLeft } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, BookOpen, Layout, Settings, FileText, ArrowLeft, Plus } from 'lucide-react'
 import BibleNavigatorContent, { BibleNavigatorRef } from './BibleNavigatorContent'
 
 interface LeftSidebarProps {
@@ -12,6 +12,7 @@ interface LeftSidebarProps {
   onCloseMobile?: () => void
   isCollapsed?: boolean
   onToggleCollapse?: () => void
+  onOpenNotesModal?: () => void
 }
 
 type BibleNavView = 'books' | 'chapters' | 'verses'
@@ -24,6 +25,7 @@ export default function LeftSidebar({
   onCloseMobile,
   isCollapsed = false,
   onToggleCollapse,
+  onOpenNotesModal,
 }: LeftSidebarProps) {
   const [currentView, setCurrentView] = useState<SidebarView>('menu')
   const [bibleNavView, setBibleNavView] = useState<BibleNavView>('books')
@@ -36,6 +38,10 @@ export default function LeftSidebar({
   ]
 
   const handleMenuClick = (viewId: SidebarView) => {
+    if (viewId === 'notes') {
+      onOpenNotesModal?.()
+      return
+    }
     if (currentView === viewId) {
       setCurrentView('menu')
     } else {
@@ -153,14 +159,7 @@ export default function LeftSidebar({
               />
             )}
 
-            {currentView === 'notes' && (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <FileText className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400">Coming soon</p>
-                </div>
-              </div>
-            )}
+
 
             {currentView === 'settings' && (
               <div className="flex-1 flex items-center justify-center">
