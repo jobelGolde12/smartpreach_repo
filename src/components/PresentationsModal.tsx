@@ -64,41 +64,38 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
     setIsGenerating(true)
     setView('generate')
 
-    setTimeout(() => {
-      const slides: PresentationSlide[] = [
-        {
-          title: topic,
-          content: additionalContent || `This presentation explores the topic of ${topic}.`
-        },
-        {
-          title: 'Introduction',
-          content: `Welcome to this presentation about ${topic}. Today we will explore key aspects and insights related to this important topic.`
-        },
-        {
-          title: 'Key Points',
-          content: `• Point 1: Understanding the fundamentals\n• Point 2: Exploring the implications\n• Point 3: Practical applications\n• Point 4: Future considerations`
-        },
-        {
-          title: 'Deep Dive',
-          content: additionalContent || 'Let us take a closer look at the subject matter and understand its deeper meaning and significance.'
-        },
-        {
-          title: 'Conclusion',
-          content: `Thank you for joining this presentation on ${topic}. We hope these insights will be valuable for your journey.`
+    try {
+      const response = await fetch('/api/generate-presentation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          topic,
+          additionalContent 
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.slides && data.slides.length > 0) {
+        const newPresentation: Presentation = {
+          id: Date.now().toString(),
+          topic,
+          slides: data.slides,
+          createdAt: new Date().toISOString()
         }
-      ]
 
-      const newPresentation: Presentation = {
-        id: Date.now().toString(),
-        topic,
-        slides,
-        createdAt: new Date().toISOString()
+        setGeneratedPresentation(newPresentation)
+        setView('options')
+      } else {
+        throw new Error('No slides generated')
       }
-
-      setGeneratedPresentation(newPresentation)
+    } catch (error) {
+      console.error('Error generating presentation:', error)
+      alert('Failed to generate presentation. Please make sure Ollama is running on localhost:11434')
+      setView('create')
+    } finally {
       setIsGenerating(false)
-      setView('options')
-    }, 3000)
+    }
   }
 
   const handleSavePresentation = () => {
@@ -115,12 +112,37 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
   }
 
   const handleDownloadPPT = () => {
-    alert('PPT download feature coming soon!')
+    const presentation = generatedPresentation || selectedPresentation
+    if (!presentation) return
+
+    const content = presentation.slides.map((slide, index) => 
+      `Slide ${index + 1}: ${slide.title}\n\n${slide.content.split('\n').map(point => `• ${point}`).join('\n')}`
+    ).join('\n\n---\n\n')
+    
+    const blob = new Blob([content], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${presentation.topic.replace(/\s+/g, '-').toLowerCase()}-presentation.txt`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleRunInApp = () => {
-    if (selectedPresentation) {
-      alert('Presentation player coming soon!')
+    const presentation = generatedPresentation || selectedPresentation
+    if (!presentation) return
+
+    if ('speechSynthesis' in window) {
+      const allText = presentation.slides.map(slide => 
+        `${slide.title}. ${slide.content}`
+      ).join('\n\n')
+      
+      const utterance = new SpeechSynthesisUtterance(allText)
+      utterance.rate = 0.9
+      utterance.pitch = 1
+      window.speechSynthesis.speak(utterance)
+    } else {
+      alert('Speech synthesis is not supported in your browser')
     }
   }
 
@@ -271,7 +293,7 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
                 Generating Presentation
               </h3>
               <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
-                AI is creating your presentation about "{topic}". This may take a few moments...
+                AI is creating your presentation about &quot;{topic}&quot;. This may take a few moments...
               </p>
             </div>
           ) : view === 'options' && generatedPresentation ? (

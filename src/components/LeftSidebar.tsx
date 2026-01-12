@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { BibleVerse } from '@/lib/bibleApi'
-import { ChevronLeft, ChevronRight, X, BookOpen, Layout, Settings, FileText, ArrowLeft, Plus, Presentation } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, BookOpen, Layout, FileText, ArrowLeft, Presentation } from 'lucide-react'
 import BibleNavigatorContent, { BibleNavigatorRef } from './BibleNavigatorContent'
 
 interface LeftSidebarProps {
@@ -27,6 +27,7 @@ export default function LeftSidebar({
   isCollapsed = false,
   onToggleCollapse,
   onOpenNotesModal,
+  onOpenPresentationsModal,
 }: LeftSidebarProps) {
   const [currentView, setCurrentView] = useState<SidebarView>('menu')
   const [bibleNavView, setBibleNavView] = useState<BibleNavView>('books')
@@ -41,6 +42,10 @@ export default function LeftSidebar({
   const handleMenuClick = (viewId: SidebarView) => {
     if (viewId === 'notes') {
       onOpenNotesModal?.()
+      return
+    }
+    if (viewId === 'presentations') {
+      onOpenPresentationsModal?.()
       return
     }
     if (currentView === viewId) {

@@ -7,6 +7,7 @@ import VerseDisplay from '@/components/VerseDisplay'
 import VerseSidebar from '@/components/VerseSidebar'
 import LeftSidebar from '@/components/LeftSidebar'
 import NotesModal from '@/components/NotesModal'
+import PresentationsModal from '@/components/PresentationsModal'
 import { BibleVerse } from '@/lib/bibleApi'
 import { Menu, X, BookOpen, User, Settings, Languages, Mic, MicOff } from 'lucide-react'
 
@@ -51,6 +52,7 @@ export default function Home() {
   const isListeningRef = useRef(false)
   const [notes, setNotes] = useState<Note[]>([])
   const [notesModalOpen, setNotesModalOpen] = useState(false)
+  const [presentationsModalOpen, setPresentationsModalOpen] = useState(false)
 
   useEffect(() => {
     isListeningRef.current = isListening
@@ -176,6 +178,10 @@ export default function Home() {
 
   const handleOpenNotesModal = () => {
     setNotesModalOpen(true)
+  }
+
+  const handleOpenPresentationsModal = () => {
+    setPresentationsModalOpen(true)
   }
 
   const extractVerseFromText = (text: string): string | null => {
@@ -373,6 +379,7 @@ export default function Home() {
           isCollapsed={leftSidebarCollapsed}
           onToggleCollapse={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
           onOpenNotesModal={handleOpenNotesModal}
+          onOpenPresentationsModal={handleOpenPresentationsModal}
         />
 
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -410,6 +417,11 @@ export default function Home() {
         onClose={() => setNotesModalOpen(false)}
         notes={notes}
         onSave={handleSaveNote}
+      />
+
+      <PresentationsModal
+        isOpen={presentationsModalOpen}
+        onClose={() => setPresentationsModalOpen(false)}
       />
     </div>
   )
