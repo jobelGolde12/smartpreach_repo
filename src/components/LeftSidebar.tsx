@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { BibleVerse } from '@/lib/bibleApi'
-import { ChevronLeft, ChevronRight, X, BookOpen, Layout, Settings, FileText, ArrowLeft, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, BookOpen, Layout, Settings, FileText, ArrowLeft, Plus, Presentation } from 'lucide-react'
 import BibleNavigatorContent, { BibleNavigatorRef } from './BibleNavigatorContent'
 
 interface LeftSidebarProps {
@@ -13,11 +13,12 @@ interface LeftSidebarProps {
   isCollapsed?: boolean
   onToggleCollapse?: () => void
   onOpenNotesModal?: () => void
+  onOpenPresentationsModal?: () => void
 }
 
 type BibleNavView = 'books' | 'chapters' | 'verses'
 
-type SidebarView = 'menu' | 'bible-navigator' | 'notes' | 'settings'
+type SidebarView = 'menu' | 'bible-navigator' | 'notes' | 'presentations'
 
 export default function LeftSidebar({
   onSelectVerse,
@@ -34,7 +35,7 @@ export default function LeftSidebar({
   const menuItems = [
     { id: 'bible-navigator' as SidebarView, label: 'Bible Navigator', icon: BookOpen },
     { id: 'notes' as SidebarView, label: 'Notes', icon: FileText },
-    { id: 'settings' as SidebarView, label: 'Settings', icon: Settings },
+    { id: 'presentations' as SidebarView, label: 'Presentations', icon: Presentation },
   ]
 
   const handleMenuClick = (viewId: SidebarView) => {
@@ -158,17 +159,8 @@ export default function LeftSidebar({
                 onExitBibleNavigator={handleBackToMenu}
               />
             )}
+ 
 
-
-
-            {currentView === 'settings' && (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <Settings className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400">Use the settings page</p>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
