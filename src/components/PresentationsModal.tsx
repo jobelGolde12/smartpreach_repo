@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Plus, ArrowLeft, Presentation, Download, Play, Sparkles, Loader2 } from 'lucide-react'
+import { X, Plus, ArrowLeft, Presentation, Download, Play, Sparkles, Loader2, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react'
 
 interface PresentationSlide {
   title: string
@@ -30,6 +30,8 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
   const [generatedPresentation, setGeneratedPresentation] = useState<Presentation | null>(null)
   const [presentations, setPresentations] = useState<Presentation[]>([])
   const [selectedPresentation, setSelectedPresentation] = useState<Presentation | null>(null)
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [isPresentationMode, setIsPresentationMode] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -38,9 +40,31 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
       setAdditionalContent('')
       setGeneratedPresentation(null)
       setSelectedPresentation(null)
+      setCurrentSlide(0)
+      setIsPresentationMode(false)
       loadPresentations()
     }
   }, [isOpen])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isPresentationMode) return
+
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault()
+        handleNextSlide()
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        handlePrevSlide()
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setIsPresentationMode(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isPresentationMode, currentSlide])
 
   const loadPresentations = () => {
     const saved = localStorage.getItem('presentations')
@@ -132,18 +156,29 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
     const presentation = generatedPresentation || selectedPresentation
     if (!presentation) return
 
-    if ('speechSynthesis' in window) {
-      const allText = presentation.slides.map(slide => 
-        `${slide.title}. ${slide.content}`
-      ).join('\n\n')
-      
-      const utterance = new SpeechSynthesisUtterance(allText)
-      utterance.rate = 0.9
-      utterance.pitch = 1
-      window.speechSynthesis.speak(utterance)
-    } else {
-      alert('Speech synthesis is not supported in your browser')
+    if (generatedPresentation) {
+      setSelectedPresentation(generatedPresentation)
+      setView('view')
     }
+    setCurrentSlide(0)
+    setIsPresentationMode(true)
+  }
+
+  const handleNextSlide = () => {
+    const presentation = generatedPresentation || selectedPresentation
+    if (presentation && currentSlide < presentation.slides.length - 1) {
+      setCurrentSlide(currentSlide + 1)
+    }
+  }
+
+  const handlePrevSlide = () => {
+    if (currentSlide > 0) {
+      setCurrentSlide(currentSlide - 1)
+    }
+  }
+
+  const handleGoToSlide = (index: number) => {
+    setCurrentSlide(index)
   }
 
   const handleBack = () => {
@@ -357,54 +392,134 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
               </div>
             </div>
           ) : view === 'view' && selectedPresentation ? (
-            <div className="p-8 animate-in fade-in-0 slide-in-from-right-4 duration-300">
-              <div className="max-w-4xl mx-auto">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                    {selectedPresentation.topic}
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleDownloadPPT}
-                      className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 text-gray-800 dark:text-gray-100"
-                    >
-                      <Download className="w-4 h-4" />
-                      PPT
-                    </button>
-                    <button
-                      onClick={handleRunInApp}
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:opacity-90 transition-all duration-200"
-                    >
-                      <Play className="w-4 h-4" />
-                      Play
-                    </button>
-                  </div>
-                </div>
+            isPresentationMode ? (
+              <div className="h-full flex flex-col animate-in fade-in-0 zoom-in-95 duration-500">
+                <div className="flex-1 flex items-center justify-center p-8 relative">
+                  <button
+                    onClick={() => setIsPresentationMode(false)}
+                    className="absolute top-4 right-4 p-2 rounded-xl bg-white/80 dark:bg-gray-800/80 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 shadow-lg"
+                  >
+                    <Minimize2 className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                  </button>
 
-                <div className="space-y-4">
-                  {selectedPresentation.slides.map((slide, index) => (
-                    <div
-                      key={index}
-                      className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-300"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold">
-                          {index + 1}
+                  <button
+                    onClick={handlePrevSlide}
+                    disabled={currentSlide === 0}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-white/80 dark:bg-gray-800/80 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 shadow-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+
+                  <div className="w-full max-w-5xl h-full max-h-[60vh] flex flex-col">
+                    <div className="flex-1 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-3xl shadow-2xl p-10 flex flex-col justify-center relative overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute top-10 right-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
+                        <div className="absolute bottom-10 left-10 w-60 h-60 bg-purple-300 rounded-full blur-3xl"></div>
+                      </div>
+
+                      <div className="relative z-10 text-white">
+                        <div className="text-sm font-medium mb-3 opacity-80">
+                          Slide {currentSlide + 1} of {selectedPresentation.slides.length}
                         </div>
-                        <div className="flex-1">
-                          <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                            {slide.title}
-                          </h4>
-                          <p className="text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
-                            {slide.content}
-                          </p>
+                        <h2 className="text-4xl md:text-5xl font-bold mb-8 leading-tight">
+                          {selectedPresentation.slides[currentSlide].title}
+                        </h2>
+                        <div className="space-y-4">
+                          {selectedPresentation.slides[currentSlide].content.split('\n').map((point, index) => (
+                            <div
+                              key={index}
+                              className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-left-4"
+                              style={{ animationDelay: `${index * 100}ms` }}
+                            >
+                              <span className="flex-shrink-0 w-2 h-2 bg-white/80 rounded-full mt-2"></span>
+                              <p className="text-lg md:text-xl leading-relaxed opacity-95">{point}</p>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
-                  ))}
+                  </div>
+
+                  <button
+                    onClick={handleNextSlide}
+                    disabled={currentSlide === selectedPresentation.slides.length - 1}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-white/80 dark:bg-gray-800/80 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 shadow-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                </div>
+
+                <div className="flex-shrink-0 px-8 pb-6">
+                  <div className="flex items-center justify-center gap-2">
+                    {selectedPresentation.slides.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleGoToSlide(index)}
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          currentSlide === index
+                            ? 'w-8 bg-blue-600'
+                            : 'w-2 bg-gray-300 dark:bg-gray-600 hover:w-4'
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-8 animate-in fade-in-0 slide-in-from-right-4 duration-300">
+                <div className="max-w-4xl mx-auto">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                      {selectedPresentation.topic}
+                    </h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleDownloadPPT}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 text-gray-800 dark:text-gray-100"
+                      >
+                        <Download className="w-4 h-4" />
+                        PPT
+                      </button>
+                      <button
+                        onClick={handleRunInApp}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:opacity-90 transition-all duration-200"
+                      >
+                        <Play className="w-4 h-4" />
+                        Play
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedPresentation.slides.map((slide, index) => (
+                      <div
+                        key={index}
+                        className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                        onClick={() => {
+                          setCurrentSlide(index)
+                          setIsPresentationMode(true)
+                        }}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold group-hover:scale-110 transition-transform">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                              {slide.title}
+                            </h4>
+                            <p className="text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
+                              {slide.content}
+                            </p>
+                          </div>
+                          <Play className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
           ) : null}
         </div>
       </div>
