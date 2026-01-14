@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import SearchBar from '@/components/SearchBar'
 import VerseDisplay from '@/components/VerseDisplay'
@@ -37,7 +37,16 @@ interface Note {
 }
 
 function HomeContent() {
+  const router = useRouter();
   const searchParams = useSearchParams()
+
+  // Check if user is logged in
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    if (!isLoggedIn) {
+      router.push('/welcome');
+    }
+  }, []);
   const [searchedVerses, setSearchedVerses] = useState<BibleVerse[]>([])
   const [selectedVerse, setSelectedVerse] = useState<BibleVerse | null>(null)
   const [isLoading, setIsLoading] = useState(false)

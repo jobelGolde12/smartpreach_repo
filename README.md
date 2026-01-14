@@ -13,6 +13,9 @@ A modern, responsive web application designed for church preaching, allowing pas
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **Fullscreen Mode**: Presentation-ready layout for congregation viewing
 - **Dark Mode Support**: Friendly for different lighting conditions
+- **Voice Recognition**: Allows pastors to search for verses using voice commands
+- **Notes Management**: Create and manage notes with associated Bible verses
+- **Presentations**: Create and manage presentations with multiple verses
 
 ## Tech Stack
 
@@ -22,6 +25,7 @@ A modern, responsive web application designed for church preaching, allowing pas
 - **TypeScript** - Type safety
 - **Server Actions** - Database operations
 - **lucide-react** - Icons
+- **Web Speech API** - Voice recognition
 
 ## Getting Started
 
@@ -85,16 +89,31 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 ```
 src/
 ├── app/
-│   ├── api/verses/route.ts    # API endpoints for verse operations
+│   ├── api/
+│   │   ├── ai-suggestions/route.ts    # AI suggestions API endpoint
+│   │   ├── generate-presentation/route.ts    # Generate presentation API endpoint
+│   │   ├── translate/route.ts    # Translation API endpoint
+│   │   └── verses/route.ts    # API endpoints for verse operations
+│   ├── generate-presentation/page.tsx    # Generate presentation page
+│   ├── presentation/[id]/page.tsx    # Presentation page
+│   ├── settings/page.tsx    # Settings page
 │   ├── layout.tsx             # Root layout with metadata
 │   ├── page.tsx               # Main page with app integration
 │   └── globals.css            # Global styles
 ├── components/
+│   ├── BibleNavigatorContent.tsx    # Bible navigation content
+│   ├── LeftSidebar.tsx    # Left sidebar with navigation
+│   ├── NoteModal.tsx    # Note modal
+│   ├── NotesModal.tsx    # Notes modal
+│   ├── PresentationsModal.tsx    # Presentations modal
 │   ├── SearchBar.tsx          # Search input with debouncing
+│   ├── ThemeProvider.tsx    # Theme provider
 │   ├── VerseDisplay.tsx       # Main verse display with fullscreen
 │   └── VerseSidebar.tsx       # Sidebar with search, recent, favorites
 └── lib/
     ├── bibleApi.ts            # Bible API integration
+    ├── bibleData.ts            # Bible data utilities
+    ├── bibleJson.ts            # Bible JSON utilities
     ├── serverActions.ts       # Server actions for DB operations
     └── turso.ts               # Turso database connection
 ```
@@ -113,6 +132,24 @@ src/
 - **Recent Verses**: View your recently displayed verses in the "Recent" tab
 - **Favorites**: Add verses to favorites by clicking the heart icon
 - **Fullscreen**: Click the fullscreen button in the top-right of the verse display for presentation mode
+
+### Voice Recognition
+
+1. Click the microphone icon in the header
+2. Speak a verse reference or keyword
+3. The app will automatically search for and display the verse
+
+### Notes Management
+
+1. Click the notes icon in the left sidebar
+2. Create a new note or edit an existing one
+3. Associate verses with your notes
+
+### Presentations
+
+1. Click the presentations icon in the left sidebar
+2. Create a new presentation or edit an existing one
+3. Add verses to your presentation
 
 ### Responsive Design
 

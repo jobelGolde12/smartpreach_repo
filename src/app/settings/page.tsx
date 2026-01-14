@@ -3,18 +3,27 @@
 import { useState } from 'react'
 import { ArrowLeft, Type, Volume2, Palette, Bell, Shield, User } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useTheme } from '@/components/ThemeProvider'
 
 type SettingsSection = 'appearance' | 'audio' | 'notifications' | 'privacy' | 'account'
 type Theme = 'light' | 'dark' | 'system'
 
 export default function Settings() {
+  const router = useRouter()
   const [activeSection, setActiveSection] = useState<SettingsSection>('appearance')
   const [fontSize, setFontSize] = useState('medium')
   const [volume, setVolume] = useState(75)
   const [notifications, setNotifications] = useState(true)
   const [emailNotifications, setEmailNotifications] = useState(false)
   const { theme, setTheme } = useTheme()
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn')
+    localStorage.removeItem('userEmail')
+    localStorage.removeItem('userName')
+    router.push('/login')
+  }
 
   if (theme === undefined) {
     return null
@@ -170,14 +179,20 @@ export default function Settings() {
                   <p className="text-gray-600 dark:text-gray-400">user@example.com</p>
                 </div>
               </div>
-              <div className="space-y-4">
-                <button className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors shadow-lg shadow-blue-600/30">
-                  Edit Profile
-                </button>
-                <button className="w-full py-3 px-6 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-xl font-medium transition-colors">
-                  Change Password
-                </button>
-              </div>
+               <div className="space-y-4">
+                 <button className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors shadow-lg shadow-blue-600/30">
+                   Edit Profile
+                 </button>
+                 <button className="w-full py-3 px-6 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-xl font-medium transition-colors">
+                   Change Password
+                 </button>
+                 <button
+                   onClick={handleLogout}
+                   className="w-full py-3 px-6 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-colors shadow-lg shadow-red-600/30"
+                 >
+                   Logout
+                 </button>
+               </div>
             </div>
           </div>
         )
