@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import SearchBar from '@/components/SearchBar'
 import VerseDisplay from '@/components/VerseDisplay'
@@ -35,7 +36,8 @@ interface Note {
   verses: string[]
 }
 
-export default function Home() {
+function HomeContent() {
+  const searchParams = useSearchParams()
   const [searchedVerses, setSearchedVerses] = useState<BibleVerse[]>([])
   const [selectedVerse, setSelectedVerse] = useState<BibleVerse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -76,6 +78,32 @@ export default function Home() {
       }
     }
   }, [])
+
+  // Handle URL parameters for opening modals
+  useEffect(() => {
+    const openPresentations = searchParams.get('openPresentations')
+    const newPresentationId = searchParams.get('newPresentation')
+    const viewPresentation = searchParams.get('viewPresentation')
+
+    if (openPresentations === 'true') {
+      setPresentationsModalOpen(true)
+
+      // If there's a new presentation, it will be handled by the modal
+      // If viewPresentation is true, check sessionStorage for temp presentation
+      if (viewPresentation === 'true') {
+        const tempPresentation = sessionStorage.getItem('tempPresentation')
+        if (tempPresentation) {
+          try {
+            const presentation = JSON.parse(tempPresentation)
+            // The modal will handle loading this presentation
+            sessionStorage.removeItem('tempPresentation')
+          } catch (error) {
+            console.error('Error parsing temp presentation:', error)
+          }
+        }
+      }
+    }
+  }, [searchParams])
 
   const handleVerseSelect = useCallback(async (verse: BibleVerse) => {
     console.log('handleVerseSelect called with:', verse)
@@ -424,5 +452,13 @@ export default function Home() {
         onClose={() => setPresentationsModalOpen(false)}
       />
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   )
 }
