@@ -23,19 +23,21 @@ Keep reasons under 1 sentence. Be fast and accurate.`
     const timeoutId = setTimeout(() => controller.abort(), 30000)
 
     try {
-      const response = await fetch('http://localhost:11434/api/generate', {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
         signal: controller.signal,
         body: JSON.stringify({
-          model: 'llama3',
-          prompt: userPrompt,
-          system: systemPrompt,
-          stream: false,
-          options: {
-            temperature: 0.3,
-            num_predict: 300,
-          }
+          model: 'openai/gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 300
         })
       })
 
@@ -47,7 +49,7 @@ Keep reasons under 1 sentence. Be fast and accurate.`
         throw new Error(data.error || 'Failed to get AI suggestions')
       }
 
-      const content = data.response?.trim() || ''
+      const content = data.choices?.[0]?.message?.content?.trim() || ''
 
       let jsonMatch = content.match(/\{[\s\S]*\}/)
 
@@ -67,7 +69,7 @@ Keep reasons under 1 sentence. Be fast and accurate.`
     } catch (fetchError: any) {
       clearTimeout(timeoutId)
       if (fetchError.name === 'AbortError') {
-        throw new Error('Request timeout - Ollama too slow')
+        throw new Error('Request timeout - OpenRouter too slow')
       }
       throw fetchError
     }

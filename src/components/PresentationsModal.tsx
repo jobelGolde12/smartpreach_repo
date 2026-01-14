@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { X, Plus, ArrowLeft, Presentation, Download, Play, Sparkles, Loader2, ChevronLeft, ChevronRight, Maximize2, Minimize2, Upload, BookOpen, FileUp } from 'lucide-react'
 
 interface PresentationSlide {
@@ -25,6 +26,7 @@ interface PresentationsModalProps {
 type View = 'list' | 'view'
 
 export default function PresentationsModal({ isOpen, onClose }: PresentationsModalProps) {
+  const router = useRouter()
   const [view, setView] = useState<View>('list')
   const [presentations, setPresentations] = useState<Presentation[]>([])
   const [selectedPresentation, setSelectedPresentation] = useState<Presentation | null>(null)
@@ -116,8 +118,8 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
 
 
   const handleViewPresentation = (presentation: Presentation) => {
-    setSelectedPresentation(presentation)
-    setView('view')
+    // Navigate to the new presentation page
+    router.push(`/presentation/${presentation.id}`)
   }
 
   const handleDownloadPPT = () => {
@@ -225,10 +227,10 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
                      <FileUp className="w-5 h-5" />
                      Import Presentation
                    </button>
-                   <button
-                     onClick={() => window.location.href = '/generate-presentation'}
-                     className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:opacity-90 transition-all duration-200 hover:scale-[1.02] shadow-lg font-medium"
-                   >
+                    <button
+                      onClick={() => router.push('/generate-presentation')}
+                      className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:opacity-90 transition-all duration-200 hover:scale-[1.02] shadow-lg font-medium"
+                    >
                      <Sparkles className="w-5 h-5" />
                      Generate with AI
                    </button>
@@ -420,10 +422,10 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
                         <Download className="w-4 h-4" />
                         PPT
                       </button>
-                  <button
-                    onClick={() => window.location.href = '/generate-presentation?fromEmptyState=true'}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:opacity-90 transition-all duration-200 hover:scale-105 shadow-lg font-medium"
-                  >
+                   <button
+                     onClick={() => router.push('/generate-presentation?fromEmptyState=true')}
+                     className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:opacity-90 transition-all duration-200 hover:scale-105 shadow-lg font-medium"
+                   >
                     Create First Presentation
                   </button>
                     </div>

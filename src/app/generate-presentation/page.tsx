@@ -46,33 +46,42 @@ function GeneratePresentationPageContent() {
     setCurrentStep('generating')
 
     try {
-      const response = await fetch('/api/generate-presentation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: finalTopic,
-          additionalContent
+      const totalSlides = 10
+      const slides = []
+
+      for (let i = 0; i < totalSlides; i++) {
+        const response = await fetch('/api/generate-presentation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: finalTopic,
+            additionalContent,
+            slideIndex: i,
+            totalSlides
+          })
         })
-      })
 
-      const data = await response.json()
+        const slide = await response.json()
 
-      if (data.slides && data.slides.length > 0) {
-        const newPresentation: Presentation = {
-          id: Date.now().toString(),
-          topic: finalTopic,
-          slides: data.slides,
-          createdAt: new Date().toISOString()
+        if (!response.ok || slide.error) {
+          throw new Error(slide.error || 'Failed to generate slide')
         }
 
-        setGeneratedPresentation(newPresentation)
-        setCurrentStep('success')
-      } else {
-        throw new Error('No slides generated')
+        slides.push(slide)
       }
+
+      const newPresentation: Presentation = {
+        id: Date.now().toString(),
+        topic: finalTopic,
+        slides,
+        createdAt: new Date().toISOString()
+      }
+
+      setGeneratedPresentation(newPresentation)
+      setCurrentStep('success')
     } catch (error) {
       console.error('Error generating presentation:', error)
-      alert('Failed to generate presentation. Please make sure Ollama is running on localhost:11434')
+      alert('Failed to generate presentation. Please check your OpenRouter API key and connection.')
       setCurrentStep('input')
     } finally {
       setIsGenerating(false)
@@ -87,16 +96,16 @@ function GeneratePresentationPageContent() {
       const updatedPresentations = [...presentations, generatedPresentation]
       localStorage.setItem('presentations', JSON.stringify(updatedPresentations))
 
-      // Redirect back to presentations modal
-      router.push('/?openPresentations=true&newPresentation=' + generatedPresentation.id)
+      // Navigate to the new presentation page
+      router.push('/presentation/' + generatedPresentation.id)
     }
   }
 
   const handleViewInApp = () => {
     if (generatedPresentation) {
-      // Save temporarily and redirect
+      // Save temporarily and navigate to presentation page
       sessionStorage.setItem('tempPresentation', JSON.stringify(generatedPresentation))
-      router.push('/?openPresentations=true&viewPresentation=true')
+      router.push('/presentation/' + generatedPresentation.id)
     }
   }
 
