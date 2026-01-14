@@ -12,6 +12,8 @@
     "@libsql/client": "^0.17.0",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
+    "pptxtojson": "^1.11.0",
+    "process": "^0.11.10",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
