@@ -23,15 +23,15 @@ Keep reasons under 1 sentence. Be fast and accurate.`
     const timeoutId = setTimeout(() => controller.abort(), 30000)
 
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
           'Content-Type': 'application/json'
         },
         signal: controller.signal,
         body: JSON.stringify({
-          model: 'openai/gpt-4o-mini',
+          model: 'llama3-8b-8192',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }

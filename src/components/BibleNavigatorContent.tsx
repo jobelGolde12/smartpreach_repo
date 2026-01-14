@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, forwardRef, useImperativeHandle } from 'react'
+import { useState, forwardRef, useImperativeHandle, useEffect } from 'react'
 import { BIBLE_BOOKS, BibleBook } from '@/lib/bibleData'
 import { BibleVerse } from '@/lib/bibleApi'
-import { BookOpen, Loader2 } from 'lucide-react'
+import { BookOpen, Loader2, ArrowLeft } from 'lucide-react'
 
 type ViewState = 'books' | 'chapters' | 'verses'
 
@@ -11,6 +11,7 @@ interface BibleNavigatorContentProps {
   onSelectVerse: (verse: BibleVerse) => void
   isCollapsed?: boolean
   onViewChange?: (view: ViewState) => void
+  onViewStateChange?: (isAtBooksLevel: boolean) => void
   onExitBibleNavigator?: () => void
 }
 
@@ -22,8 +23,21 @@ const BibleNavigatorContent = forwardRef<BibleNavigatorRef, BibleNavigatorConten
   onSelectVerse,
   isCollapsed = false,
   onViewChange,
+  onViewStateChange,
   onExitBibleNavigator,
 }, ref) => {
+  const [viewState, setViewState] = useState<ViewState>('books')
+
+  const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null)
+  const [selectedChapter, setSelectedChapter] = useState<number | null>(null)
+  const [verses, setVerses] = useState<BibleVerse[]>([])
+  const [loadingVerses, setLoadingVerses] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedTestament, setSelectedTestament] = useState<'Old' | 'New' | 'All'>('All')
+
+  useEffect(() => {
+    onViewStateChange?.(viewState === 'books')
+  }, [viewState, onViewStateChange])
 
   const handleBack = () => {
     if (viewState === 'verses') {
@@ -44,14 +58,6 @@ const BibleNavigatorContent = forwardRef<BibleNavigatorRef, BibleNavigatorConten
   useImperativeHandle(ref, () => ({
     handleBack,
   }))
-  const [viewState, setViewState] = useState<ViewState>('books')
-
-  const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null)
-  const [selectedChapter, setSelectedChapter] = useState<number | null>(null)
-  const [verses, setVerses] = useState<BibleVerse[]>([])
-  const [loadingVerses, setLoadingVerses] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedTestament, setSelectedTestament] = useState<'Old' | 'New' | 'All'>('All')
 
   const filteredBooks = BIBLE_BOOKS.filter((book) => {
     const matchesSearch =
@@ -109,6 +115,16 @@ const BibleNavigatorContent = forwardRef<BibleNavigatorRef, BibleNavigatorConten
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className={`${viewState === 'books' ? 'p-4' : ''} border-b border-gray-200/50 dark:border-gray-800/50`}>
+
+        {viewState === 'books' && (
+          <button
+            onClick={onExitBibleNavigator}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors mb-3"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Menu
+          </button>
+        )}
 
         {viewState === 'books' && (
           <>
@@ -202,6 +218,13 @@ const BibleNavigatorContent = forwardRef<BibleNavigatorRef, BibleNavigatorConten
 
         {viewState === 'chapters' && selectedBook && (
           <div className="space-y-4">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Books
+            </button>
             <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-800">
               <h3 className="font-semibold text-gray-800 dark:text-white mb-1">
                 {selectedBook.name}
@@ -233,6 +256,13 @@ const BibleNavigatorContent = forwardRef<BibleNavigatorRef, BibleNavigatorConten
 
         {viewState === 'verses' && (
           <div className="space-y-3">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Chapters
+            </button>
             <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-800">
               <h3 className="font-semibold text-gray-800 dark:text-white">
                 {selectedBook!.name} {selectedChapter}

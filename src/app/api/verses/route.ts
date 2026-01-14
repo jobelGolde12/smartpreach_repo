@@ -2,10 +2,41 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchVerse, searchByKeyword, BibleVerse } from '@/lib/bibleApi'
 import { saveVerse, logSearch } from '@/lib/serverActions'
 import { searchVersesLocally } from '@/lib/turso'
+import { getChapterVerses } from '@/lib/bibleJson'
 
 async function searchAllSources(query: string): Promise<BibleVerse[]> {
   let results: BibleVerse[] = []
 
+  // Check if query is a chapter reference (e.g., "Exodus 3")
+  const chapterMatch = query.match(/^([A-Za-z\s\d]+)\s+(\d+)$/)
+  if (chapterMatch) {
+    const [, bookName, chapterNum] = chapterMatch
+    try {
+      console.log('Detected chapter reference:', bookName, chapterNum)
+      results = await getChapterVerses(bookName.trim(), parseInt(chapterNum))
+      if (results.length > 0) {
+        console.log('Found chapter verses:', results.length)
+        return results
+      }
+    } catch (error) {
+      console.log('Get chapter verses failed:', error)
+    }
+  }
+
+  // Check if query is a verse reference (e.g., "Exodus 3:16")
+  const verseMatch = query.match(/^([A-Za-z\s\d]+)\s+(\d+):(\d+)$/)
+  if (verseMatch) {
+    try {
+      results = await fetchVerse(query)
+      if (results.length > 0) {
+        return results
+      }
+    } catch (error) {
+      console.log('Fetch verse failed:', error)
+    }
+  }
+
+  // Try keyword search
   try {
     results = await searchByKeyword(query)
     if (results.length > 0) {
@@ -15,15 +46,7 @@ async function searchAllSources(query: string): Promise<BibleVerse[]> {
     console.log('Search by keyword failed:', error)
   }
 
-  try {
-    results = await fetchVerse(query)
-    if (results.length > 0) {
-      return results
-    }
-  } catch (error) {
-    console.log('Fetch verse failed:', error)
-  }
-
+  // Try local database search
   try {
     const localResults = await searchVersesLocally(query)
     if (localResults.length > 0) {

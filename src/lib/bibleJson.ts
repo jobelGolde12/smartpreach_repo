@@ -20,36 +20,62 @@ export interface BibleVerse {
   reference: string
 }
 
-let kjvData: BibleBook[] | null = null
+let completeBibleData: BibleBook[] | null = null
+const bookCache: Map<string, BibleBook> = new Map()
 
-// Load the KJV data from the JSON file
-export async function loadKJVData(): Promise<BibleBook[]> {
-  if (kjvData) return kjvData
+// Load the complete KJV Bible data
+export async function loadCompleteBible(): Promise<BibleBook[]> {
+  if (completeBibleData) return completeBibleData
 
   try {
-    const response = await fetch('/bible/kjv.json')
+    const response = await fetch('/bible/complete-bible.json')
     if (!response.ok) {
-      throw new Error(`Failed to load KJV data: ${response.status}`)
+      throw new Error(`Failed to load complete Bible: ${response.status}`)
     }
-    const data: BibleBook[] = await response.json()
-    kjvData = data
-    return data
+    const data: { books: BibleBook[] } = await response.json()
+    completeBibleData = data.books
+
+    // Populate book cache
+    for (const book of data.books) {
+      bookCache.set(book.book.toLowerCase(), book)
+    }
+
+    return data.books
   } catch (error) {
-    console.error('Error loading KJV data:', error)
+    console.error('Error loading complete Bible data:', error)
     throw error
   }
 }
 
+// Load a specific book (uses cache if available)
+export async function loadBook(bookName: string): Promise<BibleBook | null> {
+  const cacheKey = bookName.toLowerCase()
+
+  if (bookCache.has(cacheKey)) {
+    return bookCache.get(cacheKey)!
+  }
+
+  // Load complete Bible to populate cache
+  await loadCompleteBible()
+
+  return bookCache.get(cacheKey) || null
+}
+
+// Load the KJV data (for backward compatibility)
+export async function loadKJVData(): Promise<BibleBook[]> {
+  return loadCompleteBible()
+}
+
 // Find a verse by reference (e.g., "John 3:16")
 export async function findVerseByReference(reference: string): Promise<BibleVerse | null> {
-  const data = await loadKJVData()
-
   // Parse the reference
   const match = reference.match(/^(\d?\s*[A-Za-z]+)\s+(\d+):(\d+)$/)
   if (!match) return null
 
   const [, bookName, chapterNum, verseNum] = match
-  const book = data.find(b => b.book.toLowerCase().includes(bookName.toLowerCase().trim()))
+
+  // Load only the specific book
+  const book = await loadBook(bookName.trim())
   if (!book) return null
 
   const chapter = book.chapters.find(c => c.chapter === chapterNum)
@@ -70,9 +96,7 @@ export async function findVerseByReference(reference: string): Promise<BibleVers
 
 // Get all verses from a chapter
 export async function getChapterVerses(bookName: string, chapterNum: number): Promise<BibleVerse[]> {
-  const data = await loadKJVData()
-
-  const book = data.find(b => b.book.toLowerCase().includes(bookName.toLowerCase()))
+  const book = await loadBook(bookName)
   if (!book) return []
 
   const chapter = book.chapters.find(c => parseInt(c.chapter) === chapterNum)
@@ -116,9 +140,9 @@ export async function searchVersesByKeyword(keyword: string): Promise<BibleVerse
 
 // Get book information
 export async function getBooks(): Promise<{ name: string, chapters: number }[]> {
-  const data = await loadKJVData()
+  const bibleBooks = await loadCompleteBible()
 
-  return data.map(book => ({
+  return bibleBooks.map(book => ({
     name: book.book,
     chapters: book.chapters.length
   }))
