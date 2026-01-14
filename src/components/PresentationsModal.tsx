@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Plus, ArrowLeft, Presentation, Download, Play, Sparkles, Loader2, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react'
+import { X, Plus, ArrowLeft, Presentation, Download, Play, Sparkles, Loader2, ChevronLeft, ChevronRight, Maximize2, Minimize2, Upload } from 'lucide-react'
 
 interface PresentationSlide {
   title: string
+  scripture?: string
   content: string
+  notes?: string
 }
 
 interface Presentation {
@@ -32,6 +34,7 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
   const [selectedPresentation, setSelectedPresentation] = useState<Presentation | null>(null)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isPresentationMode, setIsPresentationMode] = useState(false)
+  const [fromEmptyState, setFromEmptyState] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -42,6 +45,7 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
       setSelectedPresentation(null)
       setCurrentSlide(0)
       setIsPresentationMode(false)
+      setFromEmptyState(false)
       loadPresentations()
     }
   }, [isOpen])
@@ -109,7 +113,14 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
         }
 
         setGeneratedPresentation(newPresentation)
-        setView('options')
+        if (fromEmptyState) {
+          setSelectedPresentation(newPresentation)
+          setView('view')
+          setCurrentSlide(0)
+          setIsPresentationMode(true)
+        } else {
+          setView('options')
+        }
       } else {
         throw new Error('No slides generated')
       }
@@ -214,22 +225,31 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
                'View Presentation'}
             </h2>
           </div>
-          <div className="flex items-center gap-2">
-            {view === 'list' && (
-              <button
-                onClick={() => setView('create')}
-                className="p-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 transition-all duration-200 hover:scale-110 shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="p-2.5 rounded-2xl hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-all duration-200 hover:scale-110"
-            >
-              <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-            </button>
-          </div>
+           <div className="flex items-center gap-2">
+             {view === 'list' && (
+               <>
+                 <button
+                   onClick={() => {/* Import functionality */}}
+                   className="p-2.5 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 hover:scale-110"
+                   title="Import Presentation"
+                 >
+                   <Upload className="w-5 h-5" />
+                 </button>
+                 <button
+                   onClick={() => setView('create')}
+                   className="p-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 transition-all duration-200 hover:scale-110 shadow-lg"
+                 >
+                   <Plus className="w-5 h-5" />
+                 </button>
+               </>
+             )}
+             <button
+               onClick={onClose}
+               className="p-2.5 rounded-2xl hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-all duration-200 hover:scale-110"
+             >
+               <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+             </button>
+           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
@@ -242,12 +262,16 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
                   </div>
                   <h3 className="text-xl font-medium text-gray-700 dark:text-gray-200 mb-3">No presentations yet</h3>
                   <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto">Create AI-powered presentations for your sermons and teachings</p>
-                  <button
-                    onClick={() => setView('create')}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:opacity-90 transition-all duration-200 hover:scale-105 shadow-lg font-medium"
-                  >
-                    Create First Presentation
-                  </button>
+                   <button
+                     onClick={() => {
+                       setFromEmptyState(true)
+                       setView('create')
+                     }}
+                     className="px-12 py-6 bg-transparent border-2 border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-3xl hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 hover:scale-105 shadow-lg font-semibold text-lg backdrop-blur-sm"
+                   >
+                     <Sparkles className="w-6 h-6 inline mr-3" />
+                     Generate with AI
+                   </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -410,12 +434,33 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
                     <ChevronLeft className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                   </button>
 
-                  <div className="w-full max-w-5xl h-full max-h-[60vh] flex flex-col">
-                    <div className="flex-1 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-3xl shadow-2xl p-10 flex flex-col justify-center relative overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-                      <div className="absolute inset-0 opacity-10">
-                        <div className="absolute top-10 right-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
-                        <div className="absolute bottom-10 left-10 w-60 h-60 bg-purple-300 rounded-full blur-3xl"></div>
-                      </div>
+                   <div className="w-full max-w-5xl h-full max-h-[60vh] flex flex-col">
+                     <div className={`flex-1 rounded-3xl shadow-2xl p-10 flex flex-col justify-center relative overflow-hidden animate-in slide-in-from-bottom-4 duration-500 ${
+                       currentSlide % 4 === 0 ? 'bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500' :
+                       currentSlide % 4 === 1 ? 'bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-500' :
+                       currentSlide % 4 === 2 ? 'bg-gradient-to-br from-orange-600 via-red-600 to-pink-500' :
+                       'bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-500'
+                     }`}>
+                       <div className="absolute inset-0 opacity-10">
+                         <div className={`absolute top-10 right-10 w-40 h-40 rounded-full blur-3xl ${
+                           currentSlide % 4 === 0 ? 'bg-white' :
+                           currentSlide % 4 === 1 ? 'bg-emerald-300' :
+                           currentSlide % 4 === 2 ? 'bg-orange-300' :
+                           'bg-indigo-300'
+                         }`}></div>
+                         <div className={`absolute bottom-10 left-10 w-60 h-60 rounded-full blur-3xl ${
+                           currentSlide % 4 === 0 ? 'bg-purple-300' :
+                           currentSlide % 4 === 1 ? 'bg-teal-300' :
+                           currentSlide % 4 === 2 ? 'bg-red-300' :
+                           'bg-blue-300'
+                         }`}></div>
+                         <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-3xl opacity-5 ${
+                           currentSlide % 4 === 0 ? 'bg-blue-400' :
+                           currentSlide % 4 === 1 ? 'bg-emerald-400' :
+                           currentSlide % 4 === 2 ? 'bg-orange-400' :
+                           'bg-indigo-400'
+                         }`}></div>
+                       </div>
 
                       <div className="relative z-10 text-white">
                         <div className="text-sm font-medium mb-3 opacity-80">

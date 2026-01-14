@@ -63,6 +63,10 @@ export default function LeftSidebar({
     }
   }
 
+  const handleExitBibleNavigator = () => {
+    setCurrentView('menu')
+  }
+
   return (
     <>
       {isMobileOpen && (
@@ -155,15 +159,15 @@ export default function LeftSidebar({
               </div>
             )}
 
-            {currentView === 'bible-navigator' && (
-              <BibleNavigatorContent
-                ref={bibleNavigatorRef}
-                onSelectVerse={onSelectVerse}
-                isCollapsed={isCollapsed}
-                onViewChange={setBibleNavView}
-                onExitBibleNavigator={handleBackToMenu}
-              />
-            )}
+             {currentView === 'bible-navigator' && (
+               <BibleNavigatorContent
+                 ref={bibleNavigatorRef}
+                 onSelectVerse={onSelectVerse}
+                 isCollapsed={isCollapsed}
+                 onViewChange={setBibleNavView}
+                 onExitBibleNavigator={handleExitBibleNavigator}
+               />
+             )}
  
 
           </div>

@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, Lora, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const lora = Lora({
+  variable: "--font-serif",
+  subsets: ["latin"],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-mono",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -46,11 +52,11 @@ export default function RootLayout({
                   document.documentElement.classList.add(resolvedTheme);
                   
                   if (resolvedTheme === 'dark') {
-                    document.documentElement.style.setProperty('--background', '#0a0a0a');
-                    document.documentElement.style.setProperty('--foreground', '#ededed');
+                    document.documentElement.style.setProperty('--background', 'oklch(0.2077 0.0398 265.7549)');
+                    document.documentElement.style.setProperty('--foreground', 'oklch(0.8717 0.0093 258.3382)');
                   } else {
-                    document.documentElement.style.setProperty('--background', '#ffffff');
-                    document.documentElement.style.setProperty('--foreground', '#171717');
+                    document.documentElement.style.setProperty('--background', 'oklch(0.9751 0.0127 244.2507)');
+                    document.documentElement.style.setProperty('--foreground', 'oklch(0.3729 0.0306 259.7328)');
                   }
                 } catch(e) {}
               })();
@@ -59,7 +65,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${dmSans.variable} ${lora.variable} ${ibmPlexMono.variable} antialiased`}
         suppressHydrationWarning
       >
         <ThemeProvider>
