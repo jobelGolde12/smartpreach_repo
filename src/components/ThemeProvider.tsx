@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
+import { SessionProvider } from 'next-auth/react'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -87,9 +88,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ThemeContext.Provider value={{ theme: mounted ? theme : undefined, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <SessionProvider>
+      <ThemeContext.Provider value={{ theme: mounted ? theme : undefined, setTheme }}>
+        {children}
+      </ThemeContext.Provider>
+    </SessionProvider>
   )
 }
 

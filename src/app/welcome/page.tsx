@@ -39,12 +39,20 @@ export default function WelcomePage() {
             <Link href="#" className="hover:text-indigo-600 transition-colors">Community</Link>
             <Link href="#" className="hover:text-indigo-600 transition-colors">About</Link>
           </nav>
-          <Link
-            href="/register"
-            className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-slate-900/10 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-          >
-            <Sparkles size={14} /> Begin Journey
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="text-slate-700 hover:text-indigo-600 px-4 py-2 text-sm font-medium transition-colors"
+            >
+              Login
+            </Link>
+            <Link
+              href="/register"
+              className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-slate-900/10 transition-all hover:scale-105 active:scale-95"
+            >
+              Register
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -89,8 +97,8 @@ export default function WelcomePage() {
 
           {/* 3D Bible Container - Rendered Once */}
           <div className="relative flex justify-center lg:justify-end">
-            <div className="w-80 h-80 lg:w-96 lg:h-96 rounded-[2.5rem] bg-white/50 backdrop-blur-sm border border-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] flex items-center justify-center transform hover:scale-[1.02] transition-transform duration-500">
-              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-white/40 rounded-[2.5rem] pointer-events-none"></div>
+            <div className="w-80 h-80 lg:w-96 lg:h-96 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] flex items-center justify-center transform hover:scale-[1.02] transition-transform duration-500">
+              <div className="absolute inset-0  from-transparent via-transparent rounded-[2.5rem] pointer-events-none"></div>
               {/* Bible Component */}
               <Modern3dBible />
             </div>

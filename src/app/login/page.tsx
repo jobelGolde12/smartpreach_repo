@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { signIn } from 'next-auth/react';
 import { FaGoogle, FaEye, FaEyeSlash, FaUser, FaLock } from 'react-icons/fa';
 
 export default function LoginPage() {
@@ -130,14 +131,16 @@ export default function LoginPage() {
     setIsLoading(false);
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setIsLoading(true);
-    // Simulate Google OAuth process
-    setTimeout(() => {
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userEmail', 'google-user@example.com');
-      router.push('/');
-    }, 1500);
+    try {
+      // Explicit callbackUrl fixes cases where nothing happens on click
+      await signIn('google', { callbackUrl: '/' });
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      setError('Failed to sign in with Google. Please check your configuration.');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -277,6 +280,18 @@ export default function LoginPage() {
               <FaGoogle className="h-5 w-5 text-red-500" />
               <span>Continue with Google</span>
             </button>
+
+            {/* Google Sign-in Help Message */}
+            <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-50/70 dark:bg-amber-900/20 p-4">
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                Google sign-in notice
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-amber-700/80 dark:text-amber-200/80">
+                If Google shows an error like <span className="font-medium">“Try signing in with a different account”</span>,
+                the selected Google account isn’t permitted for this app. Please switch to another Google account
+                or contact your organization administrator.
+              </p>
+            </div>
           </form>
 
           {/* Footer Links */}
