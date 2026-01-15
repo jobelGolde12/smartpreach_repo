@@ -15,7 +15,7 @@ import {
   Instagram,
   ArrowRight,
   CheckCircle2,
-  Sparkles,
+
 } from "lucide-react";
 
 export default function WelcomePage() {

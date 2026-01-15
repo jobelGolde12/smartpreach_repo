@@ -73,6 +73,72 @@ export async function initializeDatabase() {
     await db.execute(`
       CREATE INDEX IF NOT EXISTS idx_verses_text_fts ON verses(text)
     `)
+
+    // Initialize NextAuth tables for Prisma
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS "User" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "name" TEXT,
+        "email" TEXT NOT NULL,
+        "emailVerified" DATETIME,
+        "image" TEXT
+      )
+    `)
+
+    await db.execute(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email")
+    `)
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS "Account" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "userId" TEXT NOT NULL,
+        "provider" TEXT NOT NULL,
+        "providerAccountId" TEXT NOT NULL,
+        "refresh_token" TEXT,
+        "access_token" TEXT,
+        "expires_at" INTEGER,
+        "token_type" TEXT,
+        "scope" TEXT,
+        "id_token" TEXT,
+        "session_state" TEXT,
+        FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE
+      )
+    `)
+
+    await db.execute(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId")
+    `)
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS "Session" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "sessionToken" TEXT NOT NULL,
+        "userId" TEXT NOT NULL,
+        "expires" DATETIME NOT NULL,
+        FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE
+      )
+    `)
+
+    await db.execute(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Session_sessionToken_key" ON "Session"("sessionToken")
+    `)
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS "VerificationToken" (
+        "identifier" TEXT NOT NULL,
+        "token" TEXT NOT NULL,
+        "expires" DATETIME NOT NULL
+      )
+    `)
+
+    await db.execute(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "VerificationToken_token_key" ON "VerificationToken"("token")
+    `)
+
+    await db.execute(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token")
+    `)
   } catch (error) {
     console.error('Failed to initialize database:', error)
   }

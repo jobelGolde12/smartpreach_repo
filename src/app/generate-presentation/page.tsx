@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Sparkles, Loader2, BookOpen, FileText, Presentation, CheckCircle } from 'lucide-react'
 
@@ -29,16 +29,7 @@ function GeneratePresentationPageContent() {
   const [generatedPresentation, setGeneratedPresentation] = useState<Presentation | null>(null)
   const [currentStep, setCurrentStep] = useState<'input' | 'generating' | 'success'>('input')
 
-  useEffect(() => {
-    // Auto-start generation if coming from empty state
-    if (fromEmptyState && !topic && !generatedPresentation) {
-      setCurrentStep('generating')
-      setIsGenerating(true)
-      generatePresentation('')
-    }
-  }, [fromEmptyState, topic, generatedPresentation])
-
-  const generatePresentation = async (userTopic?: string) => {
+  const generatePresentation = useCallback(async (userTopic?: string) => {
     const finalTopic = userTopic || topic
     if (!finalTopic.trim()) return
 
@@ -86,7 +77,16 @@ function GeneratePresentationPageContent() {
     } finally {
       setIsGenerating(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    // Auto-start generation if coming from empty state
+    if (fromEmptyState && !topic && !generatedPresentation) {
+      setCurrentStep('generating')
+      setIsGenerating(true)
+      generatePresentation('')
+    }
+  }, [fromEmptyState, topic, generatedPresentation, generatePresentation])
 
   const handleSaveAndContinue = () => {
     if (generatedPresentation) {

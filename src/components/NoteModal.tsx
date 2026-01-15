@@ -24,17 +24,17 @@ export default function NoteModal({ isOpen, onClose, onSave, editingNote, select
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
 
-  useEffect(() => {
-    if (isOpen) {
-      if (editingNote) {
-        setTitle(editingNote.title)
-        setContent(editingNote.content)
-      } else {
-        setTitle('')
-        setContent('')
-      }
-    }
-  }, [isOpen, editingNote])
+   useEffect(() => {
+     if (isOpen) {
+       if (editingNote) {
+         setTitle(editingNote.title)
+         setContent(editingNote.content)
+       } else {
+         setTitle('')
+         setContent('')
+       }
+     }
+   }, [isOpen, editingNote]) // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
 
   const handleSave = () => {
     if (!title.trim() && !content.trim()) return

@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
   console.log('API: Search query:', query, 'type:', type)
 
   try {
-    let verses = await searchAllSources(query)
+    const verses = await searchAllSources(query)
 
     console.log('API: Search result count:', verses.length)
     if (verses.length > 0) {

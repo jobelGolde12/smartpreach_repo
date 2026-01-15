@@ -51,7 +51,7 @@ Keep reasons under 1 sentence. Be fast and accurate.`
 
       const content = data.choices?.[0]?.message?.content?.trim() || ''
 
-      let jsonMatch = content.match(/\{[\s\S]*\}/)
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
 
       if (!jsonMatch) {
         return NextResponse.json({
@@ -66,14 +66,14 @@ Keep reasons under 1 sentence. Be fast and accurate.`
       const parsed = JSON.parse(jsonMatch[0])
 
       return NextResponse.json(parsed)
-    } catch (fetchError: any) {
+    } catch (fetchError: unknown) {
       clearTimeout(timeoutId)
-      if (fetchError.name === 'AbortError') {
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         throw new Error('Request timeout - OpenRouter too slow')
       }
       throw fetchError
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('AI suggestions error:', error)
     return NextResponse.json(
       { suggestions: [

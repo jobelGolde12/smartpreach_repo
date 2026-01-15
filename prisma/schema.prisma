@@ -5,8 +5,9 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -46,6 +47,7 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
+  hashedPassword String?
   accounts      Account[]
   sessions      Session[]
 }

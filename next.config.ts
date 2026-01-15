@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
       use: 'null-loader',
     });
     config.externals = [
-      (context: any, request: any, callback: any) => {
+      (context: string, request: string, callback: (error?: Error | null, result?: string) => void) => {
         if (request.startsWith('@libsql/')) {
           return callback(null, 'commonjs ' + request);
         }

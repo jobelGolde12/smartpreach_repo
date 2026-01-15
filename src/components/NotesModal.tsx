@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { X, Plus, ArrowLeft, Edit, Type, Heading1, Heading2, Bold, Italic, Underline } from 'lucide-react'
 
 interface Note {
@@ -24,25 +24,39 @@ export default function NotesModal({ isOpen, onClose, notes, onSave }: NotesModa
    const [title, setTitle] = useState('')
     const [content, setContent] = useState('')
     const editorRef = useRef<HTMLDivElement>(null)
-    const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set())
-    const [lineCount, setLineCount] = useState(1)
+     const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set())
+     const [lineCount, setLineCount] = useState(1)
 
-    const updateLineCount = () => {
-      if (editorRef.current) {
-        const html = editorRef.current.innerHTML
-        const md = htmlToMarkdown(html)
-        setLineCount(md.split('\n').length || 1)
-      }
-    }
+     // Function to convert HTML back to markdown
+     const htmlToMarkdown = useCallback((html: string): string => {
+       return html
+         .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+         .replace(/<em>(.*?)<\/em>/g, '*$1*')
+         .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
+         .replace(/<code>(.*?)<\/code>/g, '`$1`')
+         .replace(/<h1>(.*?)<\/h1>/g, '# $1')
+         .replace(/<h2>(.*?)<\/h2>/g, '## $1')
+         .replace(/<div>(.*?)<\/div>/g, '$1\n')
+         .replace(/<br\s*\/?>/g, '\n')
+         .replace(/<p>(.*?)<\/p>/g, '$1\n')
+     }, [])
 
-    const updateActiveFormats = () => {
-      if (!editorRef.current) return
-      const formats = new Set<string>()
-      if (document.queryCommandState('bold')) formats.add('bold')
-      if (document.queryCommandState('italic')) formats.add('italic')
-      if (document.queryCommandState('underline')) formats.add('underline')
-      setActiveFormats(formats)
-    }
+     const updateLineCount = useCallback(() => {
+       if (editorRef.current) {
+         const html = editorRef.current.innerHTML
+         const md = htmlToMarkdown(html)
+         setLineCount(md.split('\n').length || 1)
+       }
+     }, [htmlToMarkdown])
+
+      const updateActiveFormats = useCallback(() => {
+        if (!editorRef.current) return
+        const formats = new Set<string>()
+        if (document.queryCommandState('bold')) formats.add('bold')
+        if (document.queryCommandState('italic')) formats.add('italic')
+        if (document.queryCommandState('underline')) formats.add('underline')
+        setActiveFormats(formats)
+      }, [])
 
     // Function to render markdown to HTML for preview
    const renderContent = (content: string): string => {
@@ -55,24 +69,12 @@ export default function NotesModal({ isOpen, onClose, notes, onSave }: NotesModa
        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
    }
 
-    // Function to convert HTML back to markdown
-    const htmlToMarkdown = (html: string): string => {
-      return html
-        .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
-        .replace(/<em>(.*?)<\/em>/g, '*$1*')
-        .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
-        .replace(/<code>(.*?)<\/code>/g, '`$1`')
-        .replace(/<h1>(.*?)<\/h1>/g, '# $1')
-        .replace(/<h2>(.*?)<\/h2>/g, '## $1')
-        .replace(/<div>(.*?)<\/div>/g, '$1\n')
-        .replace(/<br\s*\/?>/g, '\n')
-        .replace(/<p>(.*?)<\/p>/g, '$1\n')
-    }
 
 
 
-   // Text formatting functions
-   const formatText = (format: string) => {
+
+    // Text formatting functions
+    const formatText = useCallback((format: string) => {
      const selection = window.getSelection()
      if (!selection || selection.rangeCount === 0) return
      const range = selection.getRangeAt(0)
@@ -98,13 +100,13 @@ export default function NotesModal({ isOpen, onClose, notes, onSave }: NotesModa
          const code = document.createElement('code')
          try {
            range.surroundContents(code)
-         } catch (e) {
-           // If can't surround, insert HTML
-           document.execCommand('insertHTML', false, '<code>code</code>')
-         }
-         break
-     }
-   }
+          } catch {
+            // If can't surround, insert HTML
+            document.execCommand('insertHTML', false, '<code>code</code>')
+          }
+          break
+      }
+    }, [updateActiveFormats])
 
    // Keyboard shortcuts
    useEffect(() => {
@@ -161,35 +163,35 @@ export default function NotesModal({ isOpen, onClose, notes, onSave }: NotesModa
          editorRef.current.removeEventListener('input', handleInput)
        }
      }
-   }, [view])
+    }, [view, formatText, updateLineCount])
 
-  useEffect(() => {
-    if (isOpen) {
-      setView('list')
-      setEditingNote(null)
-      setTitle('')
-      setContent('')
-    }
-  }, [isOpen])
+   useEffect(() => {
+     if (isOpen) {
+       setView('list')
+       setEditingNote(null)
+       setTitle('')
+       setContent('')
+     }
+   }, [isOpen]) // eslint-disable-line react-hooks/set-state-in-effect
 
-    useEffect(() => {
-      if (view === 'edit' && editingNote) {
-        setTitle(editingNote.title)
-        setContent('')
-      } else if (view === 'add') {
-        setTitle('')
-        setContent('')
-      }
-    }, [view, editingNote])
+     useEffect(() => {
+       if (view === 'edit' && editingNote) {
+         setTitle(editingNote.title)
+         setContent('')
+       } else if (view === 'add') {
+         setTitle('')
+         setContent('')
+       }
+     }, [view, editingNote]) // eslint-disable-line react-hooks/set-state-in-effect
 
-    useEffect(() => {
-      if (editorRef.current) {
-        editorRef.current.innerHTML = content ? renderContent(content) : ''
-        // Reset active formats when content changes
-        setActiveFormats(new Set())
-        setLineCount(content.split('\n').length || 1)
-      }
-    }, [content, view])
+     useEffect(() => {
+       if (editorRef.current) {
+         editorRef.current.innerHTML = content ? renderContent(content) : ''
+         // Reset active formats when content changes
+         setActiveFormats(new Set())
+         setLineCount(content.split('\n').length || 1)
+       }
+     }, [content, view]) // eslint-disable-line react-hooks/set-state-in-effect
 
   const handleSave = () => {
     if (!content.trim()) return

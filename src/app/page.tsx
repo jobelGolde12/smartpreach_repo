@@ -29,12 +29,46 @@ function NineDotsIcon({ className }: { className?: string }) {
 }
 
 interface Note {
-  id: string
-  title: string
-  content: string
-  createdAt: string
-  verses: string[]
+   id: string
+   title: string
+   content: string
+   createdAt: string
+   verses: string[]
 }
+
+interface SpeechRecognitionEvent extends Event {
+   results: SpeechRecognitionResultList
+   resultIndex: number
+ }
+
+ interface SpeechRecognitionErrorEvent extends Event {
+   error: string
+   message: string
+ }
+
+ interface SpeechRecognition extends EventTarget {
+   lang: string
+   continuous: boolean
+   interimResults: boolean
+    onstart: ((this: SpeechRecognition, ev: Event) => void) | null
+    onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null
+    onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null
+    onend: ((this: SpeechRecognition, ev: Event) => void) | null
+   start(): void
+   stop(): void
+   abort(): void
+ }
+
+ interface SpeechRecognitionConstructor {
+   new(): SpeechRecognition
+ }
+
+ declare global {
+   interface Window {
+     SpeechRecognition: SpeechRecognitionConstructor
+     webkitSpeechRecognition: SpeechRecognitionConstructor
+   }
+ }
 
 function HomeContent() {
   const router = useRouter();
@@ -46,7 +80,7 @@ function HomeContent() {
     if (!isLoggedIn) {
       router.push('/welcome');
     }
-  }, []);
+  }, [router]);
   const [searchedVerses, setSearchedVerses] = useState<BibleVerse[]>([])
   const [selectedVerse, setSelectedVerse] = useState<BibleVerse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -59,8 +93,8 @@ function HomeContent() {
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState('English')
   const [isListening, setIsListening] = useState(false)
-  const recognitionRef = useRef<any>(null)
-  const isListeningRef = useRef(false)
+   const recognitionRef = useRef<SpeechRecognition | null>(null)
+   const isListeningRef = useRef<boolean>(false)
   const [notes, setNotes] = useState<Note[]>([])
   const [notesModalOpen, setNotesModalOpen] = useState(false)
   const [presentationsModalOpen, setPresentationsModalOpen] = useState(false)
@@ -91,7 +125,6 @@ function HomeContent() {
   // Handle URL parameters for opening modals
   useEffect(() => {
     const openPresentations = searchParams.get('openPresentations')
-    const newPresentationId = searchParams.get('newPresentation')
     const viewPresentation = searchParams.get('viewPresentation')
 
     if (openPresentations === 'true') {
@@ -103,7 +136,7 @@ function HomeContent() {
         const tempPresentation = sessionStorage.getItem('tempPresentation')
         if (tempPresentation) {
           try {
-            const presentation = JSON.parse(tempPresentation)
+            JSON.parse(tempPresentation)
             // The modal will handle loading this presentation
             sessionStorage.removeItem('tempPresentation')
           } catch (error) {
@@ -222,8 +255,6 @@ function HomeContent() {
   }
 
   const extractVerseFromText = (text: string): string | null => {
-    const lowerText = text.toLowerCase()
-
     const patterns = [
       /\b([1-3]?\s*\w+)\s+(\d+):(\d+)\b/i,
       /\b([1-3]?\s*\w+)\s+chapter\s+(\d+)\s+verse\s+(\d+)\b/i,
@@ -233,7 +264,7 @@ function HomeContent() {
     ]
 
     for (const pattern of patterns) {
-      const match = text.match(pattern)
+      const match = text.toLowerCase().match(pattern)
       if (match) {
         const book = match[1].replace(/\s+/g, ' ').trim()
         if (match[3]) {
@@ -255,8 +286,8 @@ function HomeContent() {
       }
       setIsListening(false)
     } else {
-      if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
         const recognition = new SpeechRecognition()
         recognition.lang = 'en-US'
         recognition.continuous = true
@@ -266,7 +297,7 @@ function HomeContent() {
           setIsListening(true)
         }
 
-        recognition.onresult = (event: any) => {
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
           for (let i = event.resultIndex; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript
 
@@ -306,9 +337,9 @@ function HomeContent() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <header className="h-10 flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl px-5 py-[2rem] relative z-50 overflow-visible">
-        <div className="h-full flex items-center justify-between w-full">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-gray-900 dark:via-gray-900 dark:to-slate-900">
+      <header className="h-16 flex-shrink-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl px-6 py-3 relative z-50 overflow-visible border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+        <div className="h-full flex items-center justify-between w-full max-w-7xl mx-auto">
           <button
             onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
             className="md:hidden p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -317,7 +348,7 @@ function HomeContent() {
             {leftSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          <div className={`flex-1 transition-all duration-300 px-3 ${leftSidebarCollapsed || rightSidebarCollapsed ? 'max-w-lg' : 'max-w-lg'}`}>
+          <div className={`flex-1 transition-all duration-300 px-4 ${leftSidebarCollapsed || rightSidebarCollapsed ? 'max-w-2xl' : 'max-w-2xl'}`}>
             <SearchBar onSearch={handleSearch} isLoading={isLoading} />
           </div>
 

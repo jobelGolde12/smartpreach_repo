@@ -3,8 +3,50 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { signIn } from 'next-auth/react';
+
 import { FaGoogle, FaEye, FaEyeSlash, FaUser, FaLock } from 'react-icons/fa';
+
+class Line {
+  x: number;
+  y: number;
+  length: number;
+  angle: number;
+  speed: number;
+  opacity: number;
+  thickness: number;
+
+  constructor(canvas: HTMLCanvasElement) {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.length = Math.random() * 100 + 30;
+    this.angle = Math.random() * Math.PI * 2;
+    this.speed = Math.random() * 0.2 + 0.1;
+    this.opacity = Math.random() * 0.08 + 0.02; // Very reduced opacity
+    this.thickness = Math.random() * 1 + 0.5;
+  }
+
+  update(canvas: HTMLCanvasElement) {
+    this.x += Math.cos(this.angle) * this.speed;
+    this.y += Math.sin(this.angle) * this.speed;
+
+    if (this.x < -this.length) this.x = canvas.width + this.length;
+    if (this.x > canvas.width + this.length) this.x = -this.length;
+    if (this.y < -this.length) this.y = canvas.height + this.length;
+    if (this.y > canvas.height + this.length) this.y = -this.length;
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    ctx.lineTo(
+      this.x + Math.cos(this.angle) * this.length,
+      this.y + Math.sin(this.angle) * this.length
+    );
+    ctx.strokeStyle = `rgba(59, 130, 246, ${this.opacity})`;
+    ctx.lineWidth = this.thickness;
+    ctx.stroke();
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,52 +67,9 @@ export default function LoginPage() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    class Line {
-      x: number;
-      y: number;
-      length: number;
-      angle: number;
-      speed: number;
-      opacity: number;
-      thickness: number;
-
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.length = Math.random() * 100 + 30;
-        this.angle = Math.random() * Math.PI * 2;
-        this.speed = Math.random() * 0.2 + 0.1;
-        this.opacity = Math.random() * 0.08 + 0.02; // Very reduced opacity
-        this.thickness = Math.random() * 1 + 0.5;
-      }
-
-      update() {
-        this.x += Math.cos(this.angle) * this.speed;
-        this.y += Math.sin(this.angle) * this.speed;
-
-        if (this.x < -this.length) this.x = canvas.width + this.length;
-        if (this.x > canvas.width + this.length) this.x = -this.length;
-        if (this.y < -this.length) this.y = canvas.height + this.length;
-        if (this.y > canvas.height + this.length) this.y = -this.length;
-      }
-
-      draw() {
-        if (!ctx) return;
-        ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(
-          this.x + Math.cos(this.angle) * this.length,
-          this.y + Math.sin(this.angle) * this.length
-        );
-        ctx.strokeStyle = `rgba(59, 130, 246, ${this.opacity})`;
-        ctx.lineWidth = this.thickness;
-        ctx.stroke();
-      }
-    }
-
     const lines: Line[] = [];
     for (let i = 0; i < 30; i++) {
-      lines.push(new Line());
+      lines.push(new Line(canvas));
     }
 
     let animationId: number;
@@ -79,8 +78,8 @@ export default function LoginPage() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       lines.forEach(line => {
-        line.update();
-        line.draw();
+        line.update(canvas);
+        line.draw(ctx);
       });
       
       animationId = requestAnimationFrame(animate);
@@ -131,16 +130,8 @@ export default function LoginPage() {
     setIsLoading(false);
   };
 
-  const handleGoogleLogin = async () => {
-    setIsLoading(true);
-    try {
-      // Explicit callbackUrl fixes cases where nothing happens on click
-      await signIn('google', { callbackUrl: '/' });
-    } catch (error) {
-      console.error('Google sign-in error:', error);
-      setError('Failed to sign in with Google. Please check your configuration.');
-      setIsLoading(false);
-    }
+  const handleGoogleLogin = () => {
+    alert('Not available for now');
   };
 
   return (
@@ -297,7 +288,7 @@ export default function LoginPage() {
           {/* Footer Links */}
           <div className="mt-8 space-y-4 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link
                 href="/register"
                 className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"

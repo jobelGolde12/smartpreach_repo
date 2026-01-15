@@ -57,11 +57,11 @@ export default function PresentationPage() {
     setLoading(false)
   }
 
-  useEffect(() => {
-    if (id) {
-      loadPresentation()
-    }
-  }, [id])
+   useEffect(() => {
+     if (id) {
+       loadPresentation()
+     }
+   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
 
   const handleNextSlide = () => {
     if (presentation && currentSlide < presentation.slides.length - 1) {

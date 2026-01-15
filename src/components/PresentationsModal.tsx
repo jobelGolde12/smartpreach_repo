@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Plus, ArrowLeft, Presentation, Download, Play, Sparkles, Loader2, ChevronLeft, ChevronRight, Maximize2, Minimize2, Upload, BookOpen, FileUp } from 'lucide-react'
+import { X, ArrowLeft, Presentation, Download, Play, Sparkles, ChevronLeft, ChevronRight, Minimize2, BookOpen, FileUp } from 'lucide-react'
 import { parse, Text } from 'pptxtojson'
 
 interface PresentationSlide {
@@ -94,8 +94,8 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
           console.error('Error parsing temp presentation:', error)
         }
       }
-    }
-  }, [isOpen])
+     }
+   }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

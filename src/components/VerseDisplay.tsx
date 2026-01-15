@@ -67,11 +67,11 @@ export default function VerseDisplay({
     setTextVisible(true)
   }
 
-  useEffect(() => {
-    if (verse) {
-      handleLanguageChange(selectedLanguage)
-    }
-  }, [selectedLanguage, verse])
+   useEffect(() => {
+     if (verse) {
+       handleLanguageChange(selectedLanguage)
+     }
+   }, [selectedLanguage, verse]) // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
 
   const displayText = translatedText || verse?.text || ''
 
@@ -267,9 +267,9 @@ export default function VerseDisplay({
           </div>
 
           <div className="relative w-full min-h-0">
-            <blockquote className={`font-serif leading-relaxed text-gray-800 dark:text-gray-100 max-w-5xl mx-auto transition-all duration-300 max-h-[45vh] overflow-y-auto ${getFontSizeClass()} ${
-              textVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}>
+            <blockquote className={`font-serif leading-relaxed text-gray-800 dark:text-gray-100 max-w-5xl mx-auto transition-all duration-500 max-h-[45vh] overflow-y-auto ${getFontSizeClass()} ${
+              textVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
+            } relative`}>
               &ldquo;{displayText}&rdquo;
             </blockquote>
             {isTranslating && (
