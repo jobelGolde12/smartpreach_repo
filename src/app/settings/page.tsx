@@ -18,11 +18,13 @@ export default function Settings() {
   const [emailNotifications, setEmailNotifications] = useState(false)
   const { theme, setTheme } = useTheme()
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
     localStorage.removeItem('isLoggedIn')
     localStorage.removeItem('userEmail')
     localStorage.removeItem('userName')
-    router.push('/login')
+    localStorage.removeItem('userId')
+    router.push('/')
   }
 
   if (theme === undefined) {

@@ -5,7 +5,7 @@ A modern, responsive web application designed for church preaching, allowing pas
 ## Features
 
 - **Live Verse Search**: Search for Bible verses by keyword, phrase, or verse reference
-- **Debounced Search**: 300ms delay for smooth searching experience
+- **Debounced Search**: 300ms delay for smooth searching experiencew
 - **Verse Display Screen**: Large, readable verse display with smooth animations
 - **Verse Suggestion Panel**: Shows search results, recently used verses, and favorites
 - **Bible API Integration**: Uses bible-api.com for King James Version verses

@@ -105,29 +105,42 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
-    // Simple validation
     if (!email || !password) {
       setError('Please fill in all fields');
       setIsLoading(false);
       return;
     }
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    // Simulate login logic
-    if (email === 'user@example.com' && password === 'password') {
-      // Store login state in localStorage
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userEmail', email);
-      
-      // Redirect to dashboard
-      router.push('/');
-    } else {
-      setError('Invalid email or password');
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Login failed');
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.success) {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userEmail', data.user.email);
+        localStorage.setItem('userName', data.user.name);
+        localStorage.setItem('userId', data.user.id);
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   const handleGoogleLogin = () => {
@@ -298,7 +311,7 @@ export default function LoginPage() {
             </p>
             <div>
               <Link
-                href="/welcome"
+                href="/"
                 className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
               >
                 ← Back to Welcome Page

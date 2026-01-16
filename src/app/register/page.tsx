@@ -108,7 +108,6 @@ export default function RegisterPage() {
     setIsLoading(true);
     setError('');
 
-    // Simple validation
     if (!name || !email || !password || !confirmPassword) {
       setError('Please fill in all fields');
       setIsLoading(false);
@@ -121,23 +120,36 @@ export default function RegisterPage() {
       return;
     }
 
-    // Simulate API call delay (Mimicking Login Page behavior)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    // Simulate registration logic
-    if (email === 'user@example.com') {
-      setError('Email already exists');
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Registration failed');
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.success) {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userEmail', data.user.email);
+        localStorage.setItem('userName', data.user.name);
+        localStorage.setItem('userId', data.user.id);
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError('An error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    // Store registration state in localStorage
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userName', name);
-    
-    // Redirect to dashboard
-    router.push('/');
   };
 
   const handleGoogleLogin = () => {
@@ -146,7 +158,7 @@ export default function RegisterPage() {
     setTimeout(() => {
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userEmail', 'google-user@example.com');
-      router.push('/');
+      router.push('/dashboard');
     }, 1500);
   };
 
@@ -333,7 +345,7 @@ export default function RegisterPage() {
             </p>
             <div>
               <Link
-                href="/welcome"
+                href="/"
                 className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
               >
                 ← Back to Welcome Page

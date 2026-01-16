@@ -243,14 +243,6 @@ export default function NotesModal({ isOpen, onClose, notes, onSave }: NotesModa
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            {view === 'list' && (
-              <button
-                onClick={handleAdd}
-                className="p-2.5 rounded-2xl bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-200 hover:scale-110 shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-            )}
             <button
               onClick={onClose}
               className="p-2.5 rounded-2xl hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-all duration-200 hover:scale-110"
@@ -280,6 +272,18 @@ export default function NotesModal({ isOpen, onClose, notes, onSave }: NotesModa
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {/* New Note Button */}
+                  <button
+                    key="new-note-button"
+                    onClick={handleAdd}
+                    className="bg-gradient-to-r from-blue-600/80 to-purple-600/80 rounded-2xl border border-gray-200/40 dark:border-gray-700/40 p-6 hover:shadow-xl hover:border-gray-300/60 dark:hover:border-gray-600/60 transition-all duration-300 cursor-pointer group hover:scale-[1.02] animate-in fade-in-0 slide-in-from-bottom-4 flex flex-col items-center justify-center gap-3 text-white"
+                    style={{ animationDelay: `0ms` }}
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                      <Plus className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="font-semibold text-lg">New</span>
+                  </button>
                   {notes.map((note, index) => (
                     <div
                       key={note.id}
@@ -337,7 +341,7 @@ export default function NotesModal({ isOpen, onClose, notes, onSave }: NotesModa
                  <div className="flex border border-gray-200/60 rounded-2xl bg-white focus-within:outline-none min-h-[120px]">
                    <div className="flex-shrink-0 w-10 text-gray-400 text-base font-mono leading-relaxed py-4 pr-1 select-none border-r border-gray-200/40">
                      {Array.from({ length: lineCount }, (_, i) => (
-                       <span key={i} className="block text-right">
+                       <span key={`line-${i}`} className="block text-right">
                          {i + 1}
                        </span>
                      ))}

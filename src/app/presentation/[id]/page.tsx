@@ -134,10 +134,10 @@ export default function PresentationPage() {
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Presentation Not Found</h1>
           <p className="text-slate-600 dark:text-slate-400 mb-6">The presentation you&apos;re looking for doesn&apos;t exist.</p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/dashboard')}
             className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
           >
-            Go Home
+            Go to Dashboard
           </button>
         </div>
       </div>
