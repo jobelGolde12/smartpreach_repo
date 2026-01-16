@@ -1,7 +1,7 @@
 'use client'
 
 import { BibleVerse } from '@/lib/bibleApi'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Book, Maximize2, Minimize2, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 
 interface VerseDisplayProps {
@@ -84,8 +84,19 @@ export default function VerseDisplay({
     }
   }, [])
 
+  // Track which verses have been saved to prevent redundant saves
+  const savedVersesRef = useRef<Set<string>>(new Set())
+
   const saveCurrentVerse = useCallback(async () => {
     if (!verse) return
+
+    // Skip if this verse was already saved in this session
+    const verseKey = `${verse.reference}-${verse.text.substring(0, 50)}`
+    if (savedVersesRef.current.has(verseKey)) {
+      console.log('Verse already saved, skipping:', verse.reference)
+      return
+    }
+
     try {
       await fetch('/api/verses', {
         method: 'POST',
@@ -95,6 +106,9 @@ export default function VerseDisplay({
           verses: [verse],
         }),
       })
+      // Mark this verse as saved
+      savedVersesRef.current.add(verseKey)
+      console.log('Verse saved:', verse.reference)
     } catch (error) {
       console.error('Failed to save verse:', error)
     }
@@ -112,9 +126,8 @@ export default function VerseDisplay({
    useEffect(() => {
      if (verse) {
        saveCurrentVerse()
-       fetchRecentVerses()
      }
-   }, [verse, fetchRecentVerses, saveCurrentVerse])
+   }, [verse, saveCurrentVerse])
 
   const displayText = translatedText || verse?.text || ''
 

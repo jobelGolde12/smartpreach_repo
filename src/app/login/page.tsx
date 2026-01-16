@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 
 import { FaGoogle, FaEye, FaEyeSlash, FaUser, FaLock } from 'react-icons/fa';
 
@@ -50,6 +51,7 @@ class Line {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -132,6 +134,13 @@ export default function LoginPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (session) {
+      router.push('/dashboard');
+    }
+  }, [session, status, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -171,10 +180,6 @@ export default function LoginPage() {
       }
 
       if (data.success) {
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userEmail', data.user.email);
-        localStorage.setItem('userName', data.user.name);
-        localStorage.setItem('userId', data.user.id);
         router.push('/dashboard');
       }
     } catch (error) {

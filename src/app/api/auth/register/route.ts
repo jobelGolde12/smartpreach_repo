@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import crypto from 'node:crypto'
 
 export async function POST(request: Request) {
   try {
@@ -35,14 +36,34 @@ export async function POST(request: Request) {
       }
     })
 
-    return NextResponse.json({
+    // Create session
+    const sessionToken = crypto.randomUUID();
+    const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await prisma.session.create({
+      data: {
+        sessionToken,
+        userId: user.id,
+        expires,
+      },
+    });
+
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
-      }
-    })
+        email: user.email,
+      },
+    });
+
+    response.cookies.set('next-auth.session-token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60,
+    });
+
+    return response;
   } catch (error) {
     console.error('Registration error:', error)
     return NextResponse.json(

@@ -10,6 +10,7 @@ import LeftSidebar from '@/components/LeftSidebar'
 import NotesModal from '@/components/NotesModal'
 import PresentationsModal from '@/components/PresentationsModal'
 import { BibleVerse } from '@/lib/bibleApi'
+import { useSession } from 'next-auth/react'
 import { Menu, X, BookOpen, User, Settings, Languages, Mic, MicOff } from 'lucide-react'
 
 function NineDotsIcon({ className }: { className?: string }) {
@@ -73,14 +74,14 @@ interface Note {
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams()
-
-  // Check if user is logged in
+  const { data: session, status } = useSession();
+ 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    if (!isLoggedIn) {
+    if (status === 'loading') return;
+    if (!session) {
       router.push('/');
     }
-  }, [router]);
+  }, [status, session, router]);
   const [searchedVerses, setSearchedVerses] = useState<BibleVerse[]>([])
   const [selectedVerse, setSelectedVerse] = useState<BibleVerse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -171,7 +172,17 @@ function DashboardContent() {
     }
   }, [])
 
+  // Track recently selected references to prevent redundant API calls
+  const recentSelectionsRef = useRef<Set<string>>(new Set())
+
   const handleRecentSelect = useCallback(async (reference: string) => {
+    // Prevent duplicate calls for the same reference
+    if (recentSelectionsRef.current.has(reference)) {
+      console.log('Recent selection already in progress, skipping:', reference)
+      return
+    }
+
+    recentSelectionsRef.current.add(reference)
     setIsLoading(true)
     try {
       const response = await fetch(`/api/verses?q=${encodeURIComponent(reference)}&type=auto`)
@@ -184,6 +195,10 @@ function DashboardContent() {
       console.error('Error loading recent verse:', error)
     } finally {
       setIsLoading(false)
+      // Clean up after a short delay to allow for new selections
+      setTimeout(() => {
+        recentSelectionsRef.current.delete(reference)
+      }, 1000)
     }
   }, [handleVerseSelect])
 
