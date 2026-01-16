@@ -1,8 +1,8 @@
 'use client'
 
 import { BibleVerse } from '@/lib/bibleApi'
-import { useState, useEffect } from 'react'
-import { Book, Maximize2, Minimize2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Book, Maximize2, Minimize2, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 
 interface VerseDisplayProps {
   verse: BibleVerse | null
@@ -12,6 +12,7 @@ interface VerseDisplayProps {
   canGoNext?: boolean
   canGoPrevious?: boolean
   selectedLanguage?: string
+  onRecentSelect?: (reference: string) => void
 }
 
 export default function VerseDisplay({
@@ -22,12 +23,16 @@ export default function VerseDisplay({
   canGoNext = false,
   canGoPrevious = false,
   selectedLanguage = 'King James Version',
+  onRecentSelect,
 }: VerseDisplayProps) {
   const [isModal, setIsModal] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
   const [translatedText, setTranslatedText] = useState<string>('')
   const [isTranslating, setIsTranslating] = useState(false)
   const [textVisible, setTextVisible] = useState(true)
+  const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
+  const [showRecent, setShowRecent] = useState(true)
+  const [hoveredVerse, setHoveredVerse] = useState<BibleVerse | null>(null)
 
   const translateText = async (text: string, targetLanguage: string) => {
     if (targetLanguage === 'English') {
@@ -67,11 +72,49 @@ export default function VerseDisplay({
     setTextVisible(true)
   }
 
+  const fetchRecentVerses = useCallback(async () => {
+    try {
+      const response = await fetch('/api/verses?recent=true&limit=100')
+      if (response.ok) {
+        const data = await response.json()
+        setRecentVerses(data.verses || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch recent verses:', error)
+    }
+  }, [])
+
+  const saveCurrentVerse = useCallback(async () => {
+    if (!verse) return
+    try {
+      await fetch('/api/verses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reference: verse.reference,
+          verses: [verse],
+        }),
+      })
+    } catch (error) {
+      console.error('Failed to save verse:', error)
+    }
+  }, [verse])
    useEffect(() => {
      if (verse) {
        handleLanguageChange(selectedLanguage)
      }
    }, [selectedLanguage, verse]) // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+
+   useEffect(() => {
+     fetchRecentVerses()
+   }, [])
+
+   useEffect(() => {
+     if (verse) {
+       saveCurrentVerse()
+       fetchRecentVerses()
+     }
+   }, [verse, fetchRecentVerses, saveCurrentVerse])
 
   const displayText = translatedText || verse?.text || ''
 
@@ -246,7 +289,7 @@ export default function VerseDisplay({
       <div
         className={`${
           !isModal ? 'flex-1' : 'hidden'
-        } bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 md:p-16 lg:p-24 flex flex-col relative`}
+        } bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 md:p-16 lg:p-24 flex flex-col relative z-0`}
       >
         <button
           onClick={toggleModal}
@@ -321,6 +364,42 @@ export default function VerseDisplay({
             <ChevronRight className={`w-3 h-3 md:w-5 md:h-5 ${isNavigating ? 'animate-pulse' : ''}`} />
           </button>
         </div>
+        {!isLoading && recentVerses.length > 0 && (
+          <div className="shrink-0 mt-4 p-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 relative">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+                Recent ({recentVerses.length})
+              </p>
+              <button
+                onClick={() => setShowRecent(prev => !prev)}
+                className="p-1 rounded hover:bg-gray-200/50 dark:hover:bg-gray-700/50 transition-colors flex items-center"
+              >
+                <ChevronDown className={`w-3 h-3 transition-transform ${showRecent ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+            {showRecent && (
+              <div className="flex flex-row gap-2 overflow-x-auto pb-2 scrollbar-thin max-w-full">
+                {recentVerses.map((v, i) => (
+                  <div
+                    key={i}
+                    className="relative group text-xs whitespace-nowrap px-3 py-1 rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors min-w-fit flex-shrink-0"
+                    onMouseEnter={() => setHoveredVerse(v)}
+                    onMouseLeave={() => setHoveredVerse(null)}
+                    onClick={() => onRecentSelect?.(v.reference)}
+                  >
+                    {v.reference}
+                    {hoveredVerse?.reference === v.reference && (
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-[1001] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-2xl border rounded-lg p-2.5 text-xs max-w-md pointer-events-none whitespace-pre-wrap -translate-y-full mt-1 max-h-32 overflow-y-auto w-max border-gray-200 dark:border-gray-700">
+                        <div className="font-medium mb-1 text-gray-900 dark:text-gray-100">{v.reference}</div>
+                        <div className="leading-relaxed text-gray-800 dark:text-gray-200">{v.text}</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   )

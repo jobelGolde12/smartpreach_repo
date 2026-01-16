@@ -15,6 +15,79 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Password validation regex (at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char)
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+  // Validation functions
+  const validateName = (value: string): string | undefined => {
+    if (!value) return 'Full name is required';
+    if (value.length < 2) return 'Name must be at least 2 characters';
+    return undefined;
+  };
+
+  const validateEmail = (value: string): string | undefined => {
+    if (!value) return 'Email is required';
+    if (!emailRegex.test(value)) return 'Please enter a valid email address';
+    return undefined;
+  };
+
+  const validatePassword = (value: string): string | undefined => {
+    if (!value) return 'Password is required';
+    if (value.length < 8) return 'Password must be at least 8 characters';
+    if (!passwordRegex.test(value)) {
+      return 'Password must include uppercase, lowercase, number, and special character';
+    }
+    return undefined;
+  };
+
+  const validateConfirmPassword = (value: string): string | undefined => {
+    if (!value) return 'Please confirm your password';
+    if (value !== password) return 'Passwords do not match';
+    return undefined;
+  };
+
+  // Change handlers with validation
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setName(value);
+    setErrors(prev => ({ ...prev, name: validateName(value) }));
+    if (error) setError('');
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    setErrors(prev => ({ ...prev, email: validateEmail(value) }));
+    if (error) setError('');
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    setErrors(prev => ({
+      ...prev,
+      password: validatePassword(value),
+      confirmPassword: confirmPassword ? validateConfirmPassword(confirmPassword) : undefined
+    }));
+    if (error) setError('');
+  };
+
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setConfirmPassword(value);
+    setErrors(prev => ({ ...prev, confirmPassword: validateConfirmPassword(value) }));
+    if (error) setError('');
+  };
 
   useEffect(() => {
     // Create animated background lines (Mimicking Login Page)
@@ -108,6 +181,23 @@ export default function RegisterPage() {
     setIsLoading(true);
     setError('');
 
+    // Validate all fields
+    const nameError = validateName(name);
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+    const confirmPasswordError = validateConfirmPassword(confirmPassword);
+
+    if (nameError || emailError || passwordError || confirmPasswordError) {
+      setErrors({
+        name: nameError,
+        email: emailError,
+        password: passwordError,
+        confirmPassword: confirmPasswordError
+      });
+      setIsLoading(false);
+      return;
+    }
+
     if (!name || !email || !password || !confirmPassword) {
       setError('Please fill in all fields');
       setIsLoading(false);
@@ -197,17 +287,27 @@ export default function RegisterPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaUser className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500" />
+                  <FaUser className={`h-5 w-5 transition-colors ${errors.name ? 'text-red-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
                 </div>
                 <input
                   type="text"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300"
+                  className={`w-full pl-12 pr-4 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:outline-none transition-all duration-300 ${
+                    errors.name 
+                      ? 'border border-red-400 focus:ring-red-400' 
+                      : 'focus:ring-blue-500'
+                  }`}
                   placeholder="Enter your full name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={handleNameChange}
+                  onBlur={() => setErrors(prev => ({ ...prev, name: validateName(name) }))}
                 />
               </div>
+              {errors.name && (
+                <p className="mt-2 text-sm text-red-500 dark:text-red-400 ml-1 flex items-center">
+                  <span className="mr-1">•</span> {errors.name}
+                </p>
+              )}
             </div>
 
             {/* Email Input */}
@@ -217,17 +317,27 @@ export default function RegisterPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaEnvelope className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500" />
+                  <FaEnvelope className={`h-5 w-5 transition-colors ${errors.email ? 'text-red-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
                 </div>
                 <input
                   type="email"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300"
+                  className={`w-full pl-12 pr-4 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:outline-none transition-all duration-300 ${
+                    errors.email 
+                      ? 'border border-red-400 focus:ring-red-400' 
+                      : 'focus:ring-blue-500'
+                  }`}
                   placeholder="Enter your email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
+                  onBlur={() => setErrors(prev => ({ ...prev, email: validateEmail(email) }))}
                 />
               </div>
+              {errors.email && (
+                <p className="mt-2 text-sm text-red-500 dark:text-red-400 ml-1 flex items-center">
+                  <span className="mr-1">•</span> {errors.email}
+                </p>
+              )}
             </div>
 
             {/* Password Input */}
@@ -237,15 +347,20 @@ export default function RegisterPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaLock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500" />
+                  <FaLock className={`h-5 w-5 transition-colors ${errors.password ? 'text-red-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   required
-                  className="w-full pl-12 pr-12 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300"
+                  className={`w-full pl-12 pr-12 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:outline-none transition-all duration-300 ${
+                    errors.password 
+                      ? 'border border-red-400 focus:ring-red-400' 
+                      : 'focus:ring-blue-500'
+                  }`}
                   placeholder="Create a password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
+                  onBlur={() => setErrors(prev => ({ ...prev, password: validatePassword(password) }))}
                 />
                 <button
                   type="button"
@@ -259,6 +374,17 @@ export default function RegisterPage() {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className="mt-2 text-sm text-red-500 dark:text-red-400 ml-1 flex items-center">
+                  <span className="mr-1">•</span> {errors.password}
+                </p>
+              )}
+              {/* Password requirements hint */}
+              {!errors.password && password && (
+                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 ml-1">
+                  Password must be at least 8 characters with uppercase, lowercase, number, and special character
+                </div>
+              )}
             </div>
 
             {/* Confirm Password Input */}
@@ -268,15 +394,20 @@ export default function RegisterPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaLock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500" />
+                  <FaLock className={`h-5 w-5 transition-colors ${errors.confirmPassword ? 'text-red-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
                 </div>
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   required
-                  className="w-full pl-12 pr-12 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300"
+                  className={`w-full pl-12 pr-12 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:outline-none transition-all duration-300 ${
+                    errors.confirmPassword 
+                      ? 'border border-red-400 focus:ring-red-400' 
+                      : 'focus:ring-blue-500'
+                  }`}
                   placeholder="Confirm your password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={handleConfirmPasswordChange}
+                  onBlur={() => setErrors(prev => ({ ...prev, confirmPassword: validateConfirmPassword(confirmPassword) }))}
                 />
                 <button
                   type="button"
@@ -290,6 +421,11 @@ export default function RegisterPage() {
                   )}
                 </button>
               </div>
+              {errors.confirmPassword && (
+                <p className="mt-2 text-sm text-red-500 dark:text-red-400 ml-1 flex items-center">
+                  <span className="mr-1">•</span> {errors.confirmPassword}
+                </p>
+              )}
             </div>
 
             {/* Register Button */}

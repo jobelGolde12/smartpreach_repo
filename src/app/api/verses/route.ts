@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchVerse, searchByKeyword, BibleVerse } from '@/lib/bibleApi'
-import { saveVerse, logSearch } from '@/lib/serverActions'
+import { saveVerse, logSearch, getRecentVerses } from '@/lib/serverActions'
 import { searchVersesLocally } from '@/lib/turso'
 import { getChapterVerses } from '@/lib/bibleJson'
 
@@ -70,6 +70,22 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const query = searchParams.get('q')
   const type = searchParams.get('type') || 'auto'
+  const recentParam = searchParams.get('recent')
+
+  if (recentParam === 'true') {
+    const limitStr = searchParams.get('limit') || '20'
+    const limit = Math.min(parseInt(limitStr, 10), 50)
+    const recent = await getRecentVerses(limit)
+    const bibleVerses: BibleVerse[] = recent.map((r: any) => ({
+      book_name: r.book,
+      book_id: '',
+      chapter: r.chapter,
+      verse: r.verse,
+      text: r.text,
+      reference: r.reference,
+    }))
+    return NextResponse.json({ verses: bibleVerses })
+  }
 
   if (!query) {
     return NextResponse.json({ error: 'Query parameter is required' }, { status: 400 })

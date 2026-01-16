@@ -55,6 +55,38 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Real-time validation functions
+  const validateEmail = (value: string): string | undefined => {
+    if (!value) return 'Email is required';
+    if (!emailRegex.test(value)) return 'Please enter a valid email address';
+    return undefined;
+  };
+
+  const validatePassword = (value: string): string | undefined => {
+    if (!value) return 'Password is required';
+    return undefined;
+  };
+
+  // Handle email change with validation
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    setErrors(prev => ({ ...prev, email: validateEmail(value) }));
+    if (error) setError('');
+  };
+
+  // Handle password change with validation
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    setErrors(prev => ({ ...prev, password: validatePassword(value) }));
+    if (error) setError('');
+  };
 
   useEffect(() => {
     // Create animated background lines
@@ -104,6 +136,16 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    // Validate all fields
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+
+    if (emailError || passwordError) {
+      setErrors({ email: emailError, password: passwordError });
+      setIsLoading(false);
+      return;
+    }
 
     if (!email || !password) {
       setError('Please fill in all fields');
@@ -182,17 +224,27 @@ export default function LoginPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaUser className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500" />
+                  <FaUser className={`h-5 w-5 transition-colors ${errors.email ? 'text-red-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
                 </div>
                 <input
                   type="email"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300"
+                  className={`w-full pl-12 pr-4 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:outline-none transition-all duration-300 ${
+                    errors.email 
+                      ? 'border border-red-400 focus:ring-red-400' 
+                      : 'focus:ring-blue-500'
+                  }`}
                   placeholder="Enter your email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
+                  onBlur={() => setErrors(prev => ({ ...prev, email: validateEmail(email) }))}
                 />
               </div>
+              {errors.email && (
+                <p className="mt-2 text-sm text-red-500 dark:text-red-400 ml-1 flex items-center">
+                  <span className="mr-1">•</span> {errors.email}
+                </p>
+              )}
             </div>
 
             {/* Password Input with Eye Toggle and Icon */}
@@ -202,15 +254,20 @@ export default function LoginPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaLock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500" />
+                  <FaLock className={`h-5 w-5 transition-colors ${errors.password ? 'text-red-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   required
-                  className="w-full pl-12 pr-12 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300"
+                  className={`w-full pl-12 pr-12 py-4 bg-white/70 dark:bg-gray-700/70 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:outline-none transition-all duration-300 ${
+                    errors.password 
+                      ? 'border border-red-400 focus:ring-red-400' 
+                      : 'focus:ring-blue-500'
+                  }`}
                   placeholder="Enter your password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
+                  onBlur={() => setErrors(prev => ({ ...prev, password: validatePassword(password) }))}
                 />
                 <button
                   type="button"
@@ -224,6 +281,11 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className="mt-2 text-sm text-red-500 dark:text-red-400 ml-1 flex items-center">
+                  <span className="mr-1">•</span> {errors.password}
+                </p>
+              )}
             </div>
 
             {/* Remember Me & Forgot Password */}

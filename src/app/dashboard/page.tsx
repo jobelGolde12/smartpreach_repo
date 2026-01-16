@@ -94,7 +94,8 @@ function DashboardContent() {
   const [selectedLanguage, setSelectedLanguage] = useState('English')
   const [isListening, setIsListening] = useState(false)
    const recognitionRef = useRef<SpeechRecognition | null>(null)
-   const isListeningRef = useRef<boolean>(false)
+    const isListeningRef = useRef<boolean>(false)
+    const shouldRestartRef = useRef<boolean>(false)
   const [notes, setNotes] = useState<Note[]>([])
   const [notesModalOpen, setNotesModalOpen] = useState(false)
   const [presentationsModalOpen, setPresentationsModalOpen] = useState(false)
@@ -169,6 +170,22 @@ function DashboardContent() {
       console.error('Error saving verse:', error)
     }
   }, [])
+
+  const handleRecentSelect = useCallback(async (reference: string) => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/verses?q=${encodeURIComponent(reference)}&type=auto`)
+      const data = await response.json()
+      if (data.verses?.length > 0) {
+        setSearchedVerses(data.verses)
+        await handleVerseSelect(data.verses[0])
+      }
+    } catch (error) {
+      console.error('Error loading recent verse:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [handleVerseSelect])
 
   const handleSearch = useCallback(async (query: string) => {
     console.log('handleSearch called with:', query)
@@ -275,11 +292,19 @@ function DashboardContent() {
       }
     }
 
+    const numberPattern = /\b(?:verse\s*)?(\d+)\b/i
+    const numberMatch = text.toLowerCase().trim().match(numberPattern)
+    if (numberMatch && verseContext) {
+      const verseNum = parseInt(numberMatch[1], 10)
+      return `${verseContext.book} ${verseContext.chapter}:${verseNum}`
+    }
+
     return null
   }
 
-  const toggleMicListening = () => {
+   const toggleMicListening = () => {
     if (isListening) {
+      shouldRestartRef.current = false
       if (recognitionRef.current) {
         recognitionRef.current.stop()
         recognitionRef.current = null
@@ -307,12 +332,8 @@ function DashboardContent() {
               handleSearch(verseRef)
 
               if (recognitionRef.current) {
+                shouldRestartRef.current = true
                 recognitionRef.current.stop()
-                setTimeout(() => {
-                  if (isListeningRef.current && recognitionRef.current) {
-                    recognitionRef.current.start()
-                  }
-                }, 100)
               }
             }
           }
@@ -323,8 +344,13 @@ function DashboardContent() {
         }
 
         recognition.onend = () => {
-          if (isListeningRef.current) {
-            recognition.start()
+          if (isListeningRef.current && shouldRestartRef.current) {
+            shouldRestartRef.current = false
+            setTimeout(() => {
+              if (recognitionRef.current && isListeningRef.current) {
+                recognitionRef.current.start()
+              }
+            }, 100)
           }
         }
 
@@ -459,6 +485,7 @@ function DashboardContent() {
             canGoNext={canGoNext}
             canGoPrevious={canGoPrevious}
             selectedLanguage={selectedLanguage}
+            onRecentSelect={handleRecentSelect}
           />
         </div>
 
