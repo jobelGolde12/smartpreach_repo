@@ -2,7 +2,7 @@
 
 import { BibleVerse } from '@/lib/bibleApi'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Book, Maximize2, Minimize2, ChevronLeft, ChevronRight, ChevronDown, Trash2 } from 'lucide-react'
+import { Book, Maximize2, Minimize2, ChevronLeft, ChevronRight } from 'lucide-react'
 import HighlightTooltip from './HighlightTooltip'
 
 interface VerseDisplayProps {
@@ -37,11 +37,7 @@ export default function VerseDisplay({
   const [translatedText, setTranslatedText] = useState<string>('')
   const [isTranslating, setIsTranslating] = useState(false)
   const [textVisible, setTextVisible] = useState(true)
-const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
-    const [showRecent, setShowRecent] = useState(true)
-    const [hoveredVerse, setHoveredVerse] = useState<BibleVerse | null>(null)
-    const [recentScrollIndex, setRecentScrollIndex] = useState(0)
-    const [verseToRestore, setVerseToRestore] = useState<BibleVerse | null>(null)
+
     
     // Highlighting states
     const [highlights, setHighlights] = useState<any[]>([])
@@ -88,17 +84,7 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
     setTextVisible(true)
   }
 
-  const fetchRecentVerses = useCallback(async () => {
-    try {
-      const response = await fetch('/api/verses?recent=true&limit=100')
-      if (response.ok) {
-        const data = await response.json()
-        setRecentVerses(data.verses || [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch recent verses:', error)
-    }
-  }, [])
+  
 
   const fetchHighlights = useCallback(async (verseReference: string) => {
     try {
@@ -112,57 +98,7 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
     }
   }, [])
 
-  const deleteRecentVerse = useCallback(async (reference: string) => {
-    try {
-      const response = await fetch(`/api/verses`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reference }),
-      })
-      
-      if (response.ok) {
-        // Refresh the recent verses list
-        await fetchRecentVerses()
-        console.log('Verse deleted successfully')
-      } else {
-        console.error('Failed to delete verse:', await response.text())
-      }
-    } catch (error) {
-      console.error('Error deleting verse:', error)
-    }
-  }, [fetchRecentVerses])
-
-  const deleteAllRecentVerses = useCallback(async () => {
-    try {
-      // Store current verse to restore when verse changes
-      let currentVerseToRestore: BibleVerse | null = null
-      if (verse) {
-        const matchingVerse = recentVerses.find(v => v.reference === verse.reference)
-        if (matchingVerse) {
-          currentVerseToRestore = matchingVerse
-        }
-      }
-      
-      // Store verse to restore
-      setVerseToRestore(currentVerseToRestore)
-
-      const response = await fetch('/api/verses', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deleteAll: true }),
-      })
-      
-      if (response.ok) {
-        // Refresh the recent verses list
-        await fetchRecentVerses()
-        console.log('All recent verses deleted successfully')
-      } else {
-        console.error('Failed to delete all recent verses:', await response.text())
-      }
-    } catch (error) {
-      console.error('Error deleting all recent verses:', error)
-    }
-  }, [fetchRecentVerses, recentVerses, verse])
+  
 
 
 
@@ -340,47 +276,15 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
       }
     }, [selectedLanguage, verse, fetchHighlights]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    fetchRecentVerses()
-  }, [])
+  
 
-  // Set default verse when no verse is provided and recent verses are available
-  useEffect(() => {
-    if (!verse && recentVerses.length > 0 && setDefaultVerse && !defaultVerseSetRef.current) {
-      const latestVerse = recentVerses[0] // recent verses are ordered by displayed_at desc
-      setDefaultVerse(latestVerse)
-      defaultVerseSetRef.current = true
-    } else if (verse) {
-      // Reset the flag when a verse is manually selected
-      defaultVerseSetRef.current = false
-    }
-  }, [verse, recentVerses.length, setDefaultVerse]) // eslint-disable-line react-hooks/exhaustive-deps
+  
 
-   useEffect(() => {
+useEffect(() => {
      if (verse) {
        saveCurrentVerse()
-       
-       // Restore previous verse to recent verses if it was stored
-       if (verseToRestore && verseToRestore.reference !== verse.reference) {
-         // Re-save the previous verse to recent verses
-         fetch('/api/verses', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({
-             reference: verseToRestore.reference,
-             verses: [verseToRestore],
-           }),
-         }).then(() => {
-           // Refresh the recent verses list
-           fetchRecentVerses()
-           // Clear the verse to restore after adding it back
-           setVerseToRestore(null)
-         }).catch(error => {
-           console.error('Error restoring verse:', error)
-         })
-       }
      }
-   }, [verse, saveCurrentVerse, verseToRestore, fetchRecentVerses])
+   }, [verse, saveCurrentVerse])
 
    const displayText = translatedText || verse?.text || ''
 
@@ -491,16 +395,6 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
   }
 
   if (!verse) {
-    if (recentVerses.length > 0 && !defaultVerseSetRef.current) {
-      return (
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 md:p-16">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-            <p className="text-xl text-gray-600 dark:text-gray-400">Getting Recent Verse...</p>
-          </div>
-        </div>
-      )
-    }
     return (
       <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 md:p-16">
         <div className="text-center max-w-2xl">
@@ -719,107 +613,7 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
             <ChevronRight className={`w-3 h-3 md:w-5 md:h-5 ${isNavigating ? 'animate-pulse' : ''}`} />
           </button>
         </div>
-        {!isLoading && recentVerses.length > 0 && (
-          <div className="shrink-0 mt-4 p-3 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 relative">
-            <div className="flex items-center justify-between mb-2 px-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
-                Recent ({recentVerses.length})
-              </p>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={deleteAllRecentVerses}
-                  className="group p-1 rounded hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 className="w-3 h-3 text-gray-500 dark:text-gray-400 group-hover:text-red-500 dark:group-hover:text-red-400" />
-                </button>
-                <button
-                  onClick={() => setShowRecent(prev => !prev)}
-                  className="p-1 rounded hover:bg-gray-200/50 dark:hover:bg-gray-700/50 transition-colors flex items-center"
-                >
-                  <ChevronDown className={`w-3 h-3 transition-transform ${showRecent ? 'rotate-180' : ''}`} />
-                </button>
-              </div>
-            </div>
-{showRecent && (
-               <div className="relative">
-                 {recentScrollIndex > 0 && (
-                   <button
-                     onClick={() => setRecentScrollIndex(recentScrollIndex - 1)}
-                     className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-600"
-                     aria-label="Scroll left"
-                   >
-                     <ChevronLeft className="w-3 h-3" />
-                   </button>
-                 )}
-                 
-                 <div className="flex flex-row gap-2" style={{ marginLeft: recentScrollIndex > 0 ? '2rem' : '0', marginRight: '1rem' }}>
-                {recentVerses.slice(recentScrollIndex, recentScrollIndex + 8).map((v, i) => (
-                  <div
-                    key={i}
-                    className="relative group text-xs whitespace-nowrap px-3 py-1 rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors min-w-fit flex-shrink-0"
-                    onMouseEnter={(e) => {
-                        setHoveredVerse(v)
-                        const tooltip = e.currentTarget.querySelector('.verse-tooltip') as HTMLElement
-                        if (tooltip) {
-                          const rect = e.currentTarget.getBoundingClientRect()
-                          Object.assign(tooltip.style, {
-                            position: 'fixed',
-                            top: `${rect.top + rect.height / 2}px`,
-                            left: `${rect.right + 15}px`,
-                            transform: 'translateY(-50%)',
-                            zIndex: '40'
-                          })
-                        }
-                      }}
-                      onClick={() => {
-                        setHoveredVerse(null)
-                        onRecentSelect?.(v.reference)
-                      }}
-                  >
-                    {v.reference}
-                    {hoveredVerse?.reference === v.reference && (
-                      <div 
-                        className="verse-tooltip absolute -top-2 left-1/2 -translate-x-1/2 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-2xl border rounded-lg p-4 text-sm font-serif leading-relaxed max-w-md whitespace-pre-wrap -translate-y-full mt-1 max-h-40 overflow-y-auto w-max border-gray-200 dark:border-gray-700"
-                        onMouseEnter={() => setHoveredVerse(v)}
-                        onMouseLeave={() => setHoveredVerse(null)}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold mb-2 text-gray-900 dark:text-gray-100 text-base">{v.reference}</div>
-                            <div className="leading-relaxed text-gray-800 dark:text-gray-200 text-sm">{v.text}</div>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              deleteRecentVerse(v.reference)
-                              setHoveredVerse(null)
-                            }}
-                            className="flex-shrink-0 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 transition-colors"
-                            aria-label="Delete verse"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                 </div>
-                 
-                 {recentScrollIndex + 8 < recentVerses.length && (
-                   <button
-                     onClick={() => setRecentScrollIndex(recentScrollIndex + 1)}
-                     className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-600"
-                     aria-label="Scroll right"
-                   >
-                     <ChevronRight className="w-3 h-3" />
-                   </button>
-                 )}
-               </div>
-             )}
-          </div>
-        )}
+        
       </div>
     </>
   )

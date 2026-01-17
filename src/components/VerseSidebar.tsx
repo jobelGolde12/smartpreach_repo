@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ChevronLeft, ChevronRight, Sparkles, Loader2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles, Loader2, X, Clock, XCircle } from 'lucide-react'
 
 interface AiSuggestion {
   reference: string
@@ -22,6 +22,10 @@ interface VerseSidebarProps {
   onToggleCollapse?: () => void
   searchedVerses?: BibleVerse[]
   onSelectVerse?: (verse: BibleVerse) => void
+  recentVerses?: BibleVerse[]
+  showRecentVerses?: boolean
+  onQuitRecent?: () => void
+  relatedScriptures?: any[]
 }
 
 export default function VerseSidebar({
@@ -33,10 +37,17 @@ export default function VerseSidebar({
   onToggleCollapse,
   searchedVerses = [],
   onSelectVerse,
+  recentVerses = [],
+  showRecentVerses = false,
+  onQuitRecent,
+  relatedScriptures = [],
 }: VerseSidebarProps) {
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Use restored suggestions if available, otherwise use current suggestions
+  const displaySuggestions = relatedScriptures.length > 0 ? relatedScriptures : suggestions
 
   useEffect(() => {
     if (currentVerse?.reference && currentVerse?.text) {
@@ -45,6 +56,17 @@ export default function VerseSidebar({
       setSuggestions([])
     }
   }, [currentVerse?.reference, currentVerse?.text])
+
+  // Save suggestions to localStorage when switching to recent verses
+  useEffect(() => {
+    if (showRecentVerses && suggestions.length > 0) {
+      localStorage.setItem('relatedScriptures', JSON.stringify({
+        suggestions,
+        currentVerse,
+        timestamp: Date.now()
+      }))
+    }
+  }, [showRecentVerses, suggestions, currentVerse])
 
   const fetchSuggestions = async () => {
     if (!currentVerse?.reference || !currentVerse?.text) return
@@ -111,11 +133,30 @@ export default function VerseSidebar({
           <div className="flex items-center justify-between">
             {!isCollapsed && (
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-500" />
-                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">{searchedVerses.length > 0 ? 'Search Results' : 'Related Scriptures'}</h2>
+                {showRecentVerses ? (
+                  <>
+                    <Clock className="w-5 h-5 text-blue-500" />
+                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Recent Verses</h2>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5 text-purple-500" />
+                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">{searchedVerses.length > 0 ? 'Search Results' : 'Related Scriptures'}</h2>
+                  </>
+                )}
               </div>
             )}
             <div className="flex gap-2">
+              {!isCollapsed && showRecentVerses && onQuitRecent && (
+                <button
+                  onClick={onQuitRecent}
+                  className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors group"
+                  aria-label="Quit recent verses"
+                  title="Return to related scriptures"
+                >
+                  <XCircle className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-red-500 dark:group-hover:text-red-400" />
+                </button>
+              )}
               {onToggleCollapse && (
                 <button
                   onClick={onToggleCollapse}
@@ -142,7 +183,33 @@ export default function VerseSidebar({
 
         {!isCollapsed && (
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-            {searchedVerses.length > 0 && (
+            {showRecentVerses && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Recent Verses ({recentVerses.length})</h3>
+                {recentVerses.map((verse, index) => (
+                  <button
+                    key={index}
+                    onClick={() => onSelectVerse && onSelectVerse(verse)}
+                    className="w-full text-left p-4 rounded-xl bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all group"
+                  >
+                    <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
+                      {verse.reference}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                      {verse.text}
+                    </p>
+                  </button>
+                ))}
+                {recentVerses.length === 0 && (
+                  <div className="text-center py-12">
+                    <Clock className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400">No recent verses</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!showRecentVerses && searchedVerses.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Search Results</h3>
                 {searchedVerses.map((verse, index) => (
@@ -181,16 +248,16 @@ export default function VerseSidebar({
               </div>
             )}
 
-            {searchedVerses.length === 0 && !isLoading && !error && suggestions.length === 0 && currentVerse && (
+            {searchedVerses.length === 0 && !isLoading && !error && displaySuggestions.length === 0 && currentVerse && (
               <div className="text-center py-12">
                 <Sparkles className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
                 <p className="text-gray-500 dark:text-gray-400">No suggestions available</p>
               </div>
             )}
 
-            {searchedVerses.length === 0 && !isLoading && !error && suggestions.length > 0 && (
+            {searchedVerses.length === 0 && !isLoading && !error && displaySuggestions.length > 0 && (
               <div className="space-y-2">
-                {suggestions.map((suggestion, index) => (
+                {displaySuggestions.map((suggestion, index) => (
                   <button
                     key={index}
                     onClick={() => handleSuggestionClick(suggestion.reference)}
@@ -207,7 +274,7 @@ export default function VerseSidebar({
               </div>
             )}
 
-            {searchedVerses.length === 0 && !isLoading && !error && suggestions.length === 0 && !currentVerse && (
+            {searchedVerses.length === 0 && !isLoading && !error && suggestions.length === 0 && !currentVerse && !showRecentVerses && (
               <div className="text-center py-12">
                 <Sparkles className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
                 <p className="text-gray-500 dark:text-gray-400">Select a verse to see related scriptures</p>

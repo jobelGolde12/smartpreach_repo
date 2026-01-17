@@ -12,7 +12,7 @@ import PresentationsModal from '@/components/PresentationsModal'
 import LiveSessionSync from '@/components/LiveSessionSync'
 import { BibleVerse } from '@/lib/bibleApi'
 import { useSession } from 'next-auth/react'
-import { Menu, X, BookOpen, User, Settings, Languages, Mic, MicOff } from 'lucide-react'
+import { Menu, X, BookOpen, User, Settings, Languages, Mic, MicOff, Clock } from 'lucide-react'
 
 function NineDotsIcon({ className }: { className?: string }) {
   return (
@@ -103,6 +103,9 @@ function DashboardContent() {
   const [presentationsModalOpen, setPresentationsModalOpen] = useState(false)
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [isBlackout, setIsBlackout] = useState(false)
+  const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
+  const [showRecentVerses, setShowRecentVerses] = useState(false)
+  const [relatedScriptures, setRelatedScriptures] = useState<any[]>([])
   const [sessionFontSize, setSessionFontSize] = useState(100)
 
   useEffect(() => {
@@ -152,6 +155,11 @@ function DashboardContent() {
       }
     }
   }, [searchParams])
+
+  // Fetch recent verses on component mount
+  useEffect(() => {
+    fetchRecentVerses()
+  }, [])
 
   const handleVerseSelect = useCallback(async (verse: BibleVerse) => {
     console.log('handleVerseSelect called with:', verse)
@@ -236,6 +244,38 @@ function DashboardContent() {
     console.log('Setting default verse:', verse)
     await handleVerseSelect(verse)
   }, [handleVerseSelect])
+
+  const fetchRecentVerses = useCallback(async () => {
+    try {
+      const response = await fetch('/api/verses?recent=true&limit=100')
+      if (response.ok) {
+        const data = await response.json()
+        setRecentVerses(data.verses || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch recent verses:', error)
+    }
+  }, [])
+
+  const handleQuitRecent = useCallback(() => {
+    // Restore the previous suggestions from localStorage if they exist
+    const savedSuggestions = localStorage.getItem('relatedScriptures')
+    if (savedSuggestions) {
+      try {
+        const parsed = JSON.parse(savedSuggestions)
+        // Restore the suggestions to the state
+        if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+          setRelatedScriptures(parsed.suggestions)
+          console.log('Restored related scriptures from localStorage:', parsed.suggestions)
+        }
+        // Clean up localStorage after restoring
+        localStorage.removeItem('relatedScriptures')
+      } catch (error) {
+        console.error('Error parsing saved suggestions:', error)
+      }
+    }
+    setShowRecentVerses(false)
+  }, [])
 
   const handleSearch = useCallback(async (query: string) => {
     console.log('handleSearch called with:', query)
@@ -426,8 +466,8 @@ function DashboardContent() {
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-gray-900 dark:via-gray-900 dark:to-slate-900">
-      <header className="h-16 flex-shrink-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl px-6 py-3 relative z-50 overflow-visible border-b border-gray-200/50 dark:border-gray-700/50">
-        <div className="h-full flex items-center justify-between w-full max-w-7xl mx-auto">
+      <header className="h-16 flex-shrink-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl py-3 relative z-50 overflow-visible border-b border-gray-200/50 dark:border-gray-700/50">
+        <div className="h-full flex items-center justify-between w-full px-6">
           <button
             onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
             className="md:hidden p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -483,7 +523,18 @@ function DashboardContent() {
       {moreOptionsOpen && (
         <>
           <div onClick={() => { setMoreOptionsOpen(false); setLanguageDropdownOpen(false) }} className="fixed inset-0 z-[9999]" />
-          <div className="fixed right-4 lg:right-[15px] top-12 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[10000]">
+          <div className="fixed right-4 lg:right-[15px] top-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 z-[10000]">
+            <div
+              className="px-6 py-4 flex items-center gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onClick={() => {
+                setShowRecentVerses(!showRecentVerses)
+                setRightSidebarOpen(true) // Open the right sidebar when showing recent verses
+                setMoreOptionsOpen(false)
+              }}
+            >
+              <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <span className="text-base text-gray-700 dark:text-gray-300">Recent Verses</span>
+            </div>
             <div
               className="px-6 py-4 flex items-center gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onMouseEnter={() => setLanguageDropdownOpen(true)}
@@ -494,7 +545,7 @@ function DashboardContent() {
             </div>
             {languageDropdownOpen && (
               <div
-                className="absolute right-full top-0 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-[10001]"
+                className="absolute right-full top-0 w-40 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 py-2 z-[10001]"
                 onMouseEnter={() => setLanguageDropdownOpen(true)}
                 onMouseLeave={() => setLanguageDropdownOpen(false)}
               >
@@ -577,6 +628,10 @@ function DashboardContent() {
           onCloseMobile={() => setRightSidebarOpen(false)}
           isCollapsed={rightSidebarCollapsed}
           onToggleCollapse={() => setRightSidebarCollapsed(!rightSidebarCollapsed)}
+          recentVerses={recentVerses}
+          showRecentVerses={showRecentVerses}
+          onQuitRecent={handleQuitRecent}
+          relatedScriptures={relatedScriptures}
         />
       </div>
 
