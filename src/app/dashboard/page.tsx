@@ -152,6 +152,7 @@ function DashboardContent() {
   const handleVerseSelect = useCallback(async (verse: BibleVerse) => {
     console.log('handleVerseSelect called with:', verse)
     setSelectedVerse(verse)
+    setSearchedVerses([]) // Clear searched verses when selecting a verse
     setVerseContext({
       book: verse.book_name,
       chapter: verse.chapter,
@@ -200,6 +201,11 @@ function DashboardContent() {
         recentSelectionsRef.current.delete(reference)
       }, 1000)
     }
+  }, [handleVerseSelect])
+
+  const handleSetDefaultVerse = useCallback(async (verse: BibleVerse) => {
+    console.log('Setting default verse:', verse)
+    await handleVerseSelect(verse)
   }, [handleVerseSelect])
 
   const handleSearch = useCallback(async (query: string) => {
@@ -501,6 +507,7 @@ function DashboardContent() {
             canGoPrevious={canGoPrevious}
             selectedLanguage={selectedLanguage}
             onRecentSelect={handleRecentSelect}
+            setDefaultVerse={handleSetDefaultVerse}
           />
         </div>
 

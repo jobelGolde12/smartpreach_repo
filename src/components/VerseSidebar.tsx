@@ -190,7 +190,6 @@ export default function VerseSidebar({
 
             {searchedVerses.length === 0 && !isLoading && !error && suggestions.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">AI Suggestions</h3>
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={index}
@@ -211,7 +210,7 @@ export default function VerseSidebar({
             {searchedVerses.length === 0 && !isLoading && !error && suggestions.length === 0 && !currentVerse && (
               <div className="text-center py-12">
                 <Sparkles className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-                <p className="text-gray-500 dark:text-gray-400">Select a verse to see AI suggestions</p>
+                <p className="text-gray-500 dark:text-gray-400">Select a verse to see related scriptures</p>
               </div>
             )}
           </div>
@@ -222,7 +221,7 @@ export default function VerseSidebar({
             <div className="text-center">
               <Sparkles className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
               <p className="text-xs text-gray-400 writing-mode-vertical" style={{ writingMode: 'vertical-rl' }}>
-                AI
+                Related
               </p>
             </div>
           </div>

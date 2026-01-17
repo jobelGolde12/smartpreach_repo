@@ -63,6 +63,19 @@ export async function initializeDatabase() {
     `)
 
     await db.execute(`
+      CREATE TABLE IF NOT EXISTS highlights (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        verse_id INTEGER NOT NULL,
+        start_index INTEGER NOT NULL,
+        end_index INTEGER NOT NULL,
+        highlighted_text TEXT NOT NULL,
+        color TEXT DEFAULT 'yellow',
+        created_at INTEGER DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (verse_id) REFERENCES verses(id) ON DELETE CASCADE
+      )
+    `)
+
+    await db.execute(`
       CREATE INDEX IF NOT EXISTS idx_verses_reference ON verses(reference)
     `)
 
@@ -72,6 +85,10 @@ export async function initializeDatabase() {
 
     await db.execute(`
       CREATE INDEX IF NOT EXISTS idx_verses_text_fts ON verses(text)
+    `)
+
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS idx_highlights_verse_id ON highlights(verse_id)
     `)
 
     // Initialize NextAuth tables for Prisma

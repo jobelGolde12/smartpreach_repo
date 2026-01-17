@@ -3,6 +3,7 @@
 import { BibleVerse } from '@/lib/bibleApi'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Book, Maximize2, Minimize2, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import HighlightTooltip from './HighlightTooltip'
 
 interface VerseDisplayProps {
   verse: BibleVerse | null
@@ -13,6 +14,7 @@ interface VerseDisplayProps {
   canGoPrevious?: boolean
   selectedLanguage?: string
   onRecentSelect?: (reference: string) => void
+  setDefaultVerse?: (verse: BibleVerse) => void
 }
 
 export default function VerseDisplay({
@@ -24,6 +26,7 @@ export default function VerseDisplay({
   canGoPrevious = false,
   selectedLanguage = 'King James Version',
   onRecentSelect,
+  setDefaultVerse,
 }: VerseDisplayProps) {
   const [isModal, setIsModal] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
@@ -34,6 +37,13 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
     const [showRecent, setShowRecent] = useState(true)
     const [hoveredVerse, setHoveredVerse] = useState<BibleVerse | null>(null)
     const [recentScrollIndex, setRecentScrollIndex] = useState(0)
+    
+    // Highlighting states
+    const [highlights, setHighlights] = useState<any[]>([])
+    const [selectedText, setSelectedText] = useState('')
+    const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null)
+    const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null)
+    const [showTooltip, setShowTooltip] = useState(false)
 
   const translateText = async (text: string, targetLanguage: string) => {
     if (targetLanguage === 'English') {
@@ -85,8 +95,120 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
     }
   }, [])
 
+  const fetchHighlights = useCallback(async (verseReference: string) => {
+    try {
+      const response = await fetch(`/api/highlights?verseReference=${encodeURIComponent(verseReference)}`)
+      if (response.ok) {
+        const data = await response.json()
+        setHighlights(data.highlights || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch highlights:', error)
+    }
+  }, [])
+
+
+
+
+
+  const renderHighlightedText = useCallback((text: string) => {
+    if (highlights.length === 0) {
+      return text
+    }
+
+    // Sort highlights by start index
+    const sortedHighlights = [...highlights].sort((a, b) => a.start_index - b.start_index)
+    
+    const elements: React.ReactNode[] = []
+    let lastIndex = 0
+
+    for (const highlight of sortedHighlights) {
+      // Add text before highlight
+      if (highlight.start_index > lastIndex) {
+        elements.push(text.slice(lastIndex, highlight.start_index))
+      }
+
+      // Add highlighted text
+      const highlightedText = text.slice(highlight.start_index, highlight.end_index)
+      elements.push(
+        <span
+          key={highlight.id}
+          className="bg-yellow-200 dark:bg-yellow-800/40 rounded px-1"
+          style={{ backgroundColor: highlight.color === 'yellow' ? 'rgba(250, 204, 21, 0.3)' : highlight.color }}
+        >
+          {highlightedText}
+        </span>
+      )
+
+      lastIndex = highlight.end_index
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      elements.push(text.slice(lastIndex))
+    }
+
+    return elements
+  }, [highlights])
+
+  const isTextAlreadyHighlighted = useCallback(() => {
+    if (!selectionRange || highlights.length === 0) {
+      return false
+    }
+
+    // Check if the selected range matches any existing highlight
+    return highlights.some(highlight => 
+      selectionRange!.start >= highlight.start_index && 
+      selectionRange!.end <= highlight.end_index
+    )
+  }, [selectionRange, highlights])
+
+  const handleUnhighlight = useCallback(async () => {
+    if (!selectionRange || highlights.length === 0) return
+
+    // Find the highlight that matches the selected range
+    const matchingHighlight = highlights.find(highlight => 
+      selectionRange.start >= highlight.start_index && 
+      selectionRange.end <= highlight.end_index
+    )
+
+    if (matchingHighlight) {
+      await removeHighlight(matchingHighlight.id)
+    }
+
+    // Clear selection
+    window.getSelection()?.removeAllRanges()
+    setShowTooltip(false)
+  }, [selectionRange, highlights])
+
+  const removeHighlight = useCallback(async (highlightId: number) => {
+    try {
+      const response = await fetch('/api/highlights', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          highlightId: highlightId
+        }),
+      })
+
+      if (response.ok) {
+        // Refresh highlights
+        if (verse) {
+          fetchHighlights(verse.reference)
+        }
+        console.log('Highlight removed successfully')
+      } else {
+        console.error('Failed to remove highlight:', await response.text())
+      }
+    } catch (error) {
+      console.error('Error removing highlight:', error)
+    }
+  }, [fetchHighlights, verse])
+
   // Track which verses have been saved to prevent redundant saves
   const savedVersesRef = useRef<Set<string>>(new Set())
+  // Track if default verse has been set to prevent repeated setting
+  const defaultVerseSetRef = useRef<boolean>(false)
 
   const saveCurrentVerse = useCallback(async () => {
     if (!verse) return
@@ -114,15 +236,68 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
       console.error('Failed to save verse:', error)
     }
   }, [verse])
-   useEffect(() => {
-     if (verse) {
-       handleLanguageChange(selectedLanguage)
-     }
-   }, [selectedLanguage, verse]) // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+
+  const handleHighlight = useCallback(async (text: string) => {
+    if (!verse || !selectionRange) return
+
+    try {
+      // Save the verse first to ensure it exists in database
+      await saveCurrentVerse()
+
+      // Small delay to ensure verse is saved
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Save highlight using verse reference
+      const response = await fetch('/api/highlights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          verse_reference: verse.reference,
+          start_index: selectionRange.start,
+          end_index: selectionRange.end,
+          highlighted_text: text,
+          color: 'yellow',
+        }),
+      })
+
+      if (response.ok) {
+        // Refresh highlights
+        fetchHighlights(verse.reference)
+        console.log('Highlight saved successfully')
+      } else {
+        console.error('Failed to save highlight:', await response.text())
+      }
+    } catch (error) {
+      console.error('Error saving highlight:', error)
+    }
+
+    // Clear selection
+    window.getSelection()?.removeAllRanges()
+    setShowTooltip(false)
+  }, [verse, selectionRange, fetchHighlights, saveCurrentVerse])
 
    useEffect(() => {
-     fetchRecentVerses()
-   }, [])
+      if (verse) {
+        handleLanguageChange(selectedLanguage)
+        fetchHighlights(verse.reference)
+      }
+    }, [selectedLanguage, verse, fetchHighlights]) // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+
+  useEffect(() => {
+    fetchRecentVerses()
+  }, [])
+
+  // Set default verse when no verse is provided and recent verses are available
+  useEffect(() => {
+    if (!verse && recentVerses.length > 0 && setDefaultVerse && !defaultVerseSetRef.current) {
+      const latestVerse = recentVerses[0] // recent verses are ordered by displayed_at desc
+      setDefaultVerse(latestVerse)
+      defaultVerseSetRef.current = true
+    } else if (verse) {
+      // Reset the flag when a verse is manually selected
+      defaultVerseSetRef.current = false
+    }
+  }, [verse, recentVerses.length, setDefaultVerse]) // eslint-disable-line react-hooks/exhaustive-deps
 
    useEffect(() => {
      if (verse) {
@@ -130,7 +305,41 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
      }
    }, [verse, saveCurrentVerse])
 
-  const displayText = translatedText || verse?.text || ''
+   const displayText = translatedText || verse?.text || ''
+
+  const handleTextSelection = useCallback(() => {
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) {
+      setShowTooltip(false)
+      return
+    }
+
+    const selectedText = selection.toString().trim()
+    if (selectedText.length === 0) {
+      setShowTooltip(false)
+      return
+    }
+
+    const range = selection.getRangeAt(0)
+    const rect = range.getBoundingClientRect()
+    
+    setSelectedText(selectedText)
+    
+    // Create a temporary range to count characters from the beginning
+    const tempRange = document.createRange()
+    tempRange.selectNodeContents(range.startContainer.parentElement!)
+    tempRange.setEnd(range.startContainer, range.startOffset)
+    const startCharCount = tempRange.toString().length
+    
+    const endCharCount = startCharCount + selectedText.length
+    
+    setSelectionRange({ start: startCharCount, end: endCharCount })
+    setTooltipPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+    })
+    setShowTooltip(true)
+  }, [])
 
   const isLongText = displayText.length > 500 || displayText.split(/\s+/).filter(word => word.length > 0).length > 80
   const shouldMoveNavUp = displayText.length >= 330
@@ -222,6 +431,17 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
 
   return (
     <>
+      {showTooltip && tooltipPosition && (
+        <HighlightTooltip
+          selectedText={selectedText}
+          position={tooltipPosition}
+          onHighlight={handleHighlight}
+          onUnhighlight={handleUnhighlight}
+          isHighlighted={isTextAlreadyHighlighted()}
+          onClose={() => setShowTooltip(false)}
+        />
+      )}
+      
       {isModal && (
         <div className="fixed inset-0 z-[100] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex flex-col">
           <div className="flex-1 min-h-0 p-8 md:p-16 lg:p-24 flex flex-col items-center justify-center text-center max-w-7xl mx-auto">
@@ -243,10 +463,14 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
             </div>
 
             <div className="relative w-full min-h-0">
-              <blockquote className={`font-serif leading-relaxed text-gray-800 dark:text-gray-100 max-w-6xl mx-auto transition-all duration-300 max-h-[50vh] overflow-y-auto ${getModalFontSizeClass()} ${
-                textVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}>
-                &ldquo;{displayText}&rdquo;
+              <blockquote 
+                className={`font-serif leading-relaxed text-gray-800 dark:text-gray-100 max-w-6xl mx-auto transition-all duration-300 max-h-[50vh] overflow-y-auto ${getModalFontSizeClass()} ${
+                  textVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                } select-text`}
+                onMouseUp={handleTextSelection}
+                onSelect={handleTextSelection}
+              >
+                &ldquo;{renderHighlightedText(displayText)}&rdquo;
               </blockquote>
               {isTranslating && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -324,10 +548,14 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
           </div>
 
           <div className="relative w-full min-h-0">
-            <blockquote className={`font-serif leading-relaxed text-gray-800 dark:text-gray-100 max-w-5xl mx-auto transition-all duration-500 max-h-[45vh] overflow-y-auto ${getFontSizeClass()} ${
-              textVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
-            } relative`}>
-              &ldquo;{displayText}&rdquo;
+            <blockquote 
+              className={`font-serif leading-relaxed text-gray-800 dark:text-gray-100 max-w-5xl mx-auto transition-all duration-500 max-h-[45vh] overflow-y-auto ${getFontSizeClass()} ${
+                textVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
+              } relative select-text`}
+              onMouseUp={handleTextSelection}
+              onSelect={handleTextSelection}
+            >
+              &ldquo;{renderHighlightedText(displayText)}&rdquo;
             </blockquote>
             {isTranslating && (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -379,7 +607,7 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
           </button>
         </div>
         {!isLoading && recentVerses.length > 0 && (
-          <div className="shrink-0 mt-4 p-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 relative">
+          <div className="shrink-0 mt-4 p-3 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 relative">
             <div className="flex items-center justify-between mb-2 px-1">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
                 Recent ({recentVerses.length})
@@ -422,8 +650,11 @@ onMouseEnter={(e) => {
                          })
                        }
                      }}
-                     onMouseLeave={() => setHoveredVerse(null)}
-                    onClick={() => onRecentSelect?.(v.reference)}
+                      onMouseLeave={() => setHoveredVerse(null)}
+                     onClick={() => {
+                       setHoveredVerse(null)
+                       onRecentSelect?.(v.reference)
+                     }}
                   >
                     {v.reference}
                     {hoveredVerse?.reference === v.reference && (

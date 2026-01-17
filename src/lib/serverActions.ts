@@ -152,3 +152,113 @@ export async function logSearch(query: string, resultCount: number) {
     console.error('Error logging search:', error)
   }
 }
+
+export interface Highlight {
+  id: number
+  verse_id: number
+  start_index: number
+  end_index: number
+  highlighted_text: string
+  color: string
+  created_at: number
+}
+
+export async function saveHighlight(highlight: Omit<Highlight, 'id' | 'created_at'>): Promise<{ success: boolean; id?: number; error?: string }> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return { success: false, error: 'Database not available' }
+    }
+
+    const result = await turso.execute({
+      sql: `INSERT INTO highlights (verse_id, start_index, end_index, highlighted_text, color)
+            VALUES (?, ?, ?, ?, ?)`,
+      args: [highlight.verse_id, highlight.start_index, highlight.end_index, highlight.highlighted_text, highlight.color],
+    })
+
+    const lastInsertId = result.lastInsertRowid
+    if (lastInsertId) {
+      return { 
+        success: true, 
+        id: typeof lastInsertId === 'bigint' ? Number(lastInsertId) : (lastInsertId as number)
+      }
+    } else {
+      return { success: false, error: 'Failed to get insert ID' }
+    }
+  } catch (error) {
+    console.error('Error saving highlight:', error)
+    return { success: false, error: 'Failed to save highlight' }
+  }
+}
+
+export async function getVerseHighlights(verseReference: string): Promise<Highlight[]> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return []
+    }
+
+    const result = await turso.execute({
+      sql: `SELECT h.* FROM highlights h
+            INNER JOIN verses v ON h.verse_id = v.id
+            WHERE v.reference = ?
+            ORDER BY h.start_index`,
+      args: [verseReference],
+    })
+
+    return result.rows.map((row) => ({
+      id: typeof row.id === 'bigint' ? Number(row.id) : row.id as number,
+      verse_id: typeof row.verse_id === 'bigint' ? Number(row.verse_id) : row.verse_id as number,
+      start_index: row.start_index as number,
+      end_index: row.end_index as number,
+      highlighted_text: row.highlighted_text as string,
+      color: row.color as string,
+      created_at: typeof row.created_at === 'bigint' ? Number(row.created_at) : row.created_at as number,
+    }))
+  } catch (error) {
+    console.error('Error fetching highlights:', error)
+    return []
+  }
+}
+
+export async function deleteHighlight(highlightId: number) {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return { success: false, error: 'Database not available' }
+    }
+
+    await turso.execute({
+      sql: `DELETE FROM highlights WHERE id = ?`,
+      args: [highlightId],
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting highlight:', error)
+    return { success: false, error: 'Failed to delete highlight' }
+  }
+}
+
+export async function getVerseIdByReference(reference: string): Promise<number | null> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return null
+    }
+
+    const result = await turso.execute({
+      sql: `SELECT id FROM verses WHERE reference = ? LIMIT 1`,
+      args: [reference],
+    })
+
+    if (result.rows.length > 0) {
+      const id = result.rows[0].id
+      return typeof id === 'bigint' ? Number(id) : id as number
+    }
+    return null
+  } catch (error) {
+    console.error('Error getting verse ID:', error)
+    return null
+  }
+}

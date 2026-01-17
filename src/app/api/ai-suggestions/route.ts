@@ -23,15 +23,27 @@ Keep reasons under 1 sentence. Be fast and accurate.`
     const timeoutId = setTimeout(() => controller.abort(), 30000)
 
     try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      // Use OpenRouter API with fallback to Groq
+      const apiKey = process.env.OPENROUTER_API_KEY || process.env.GROQ_API_KEY
+      const apiUrl = process.env.OPENROUTER_API_KEY 
+        ? 'https://openrouter.ai/api/v1/chat/completions'
+        : 'https://api.groq.com/openai/v1/chat/completions'
+      
+      // Use a good free/budget model for suggestions
+      const model = process.env.OPENROUTER_API_KEY 
+        ? 'deepseek/deepseek-chat' // Free model on OpenRouter
+        : 'llama-3.3-70b-versatile' // Updated model for Groq
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          ...(process.env.OPENROUTER_API_KEY && { 'HTTP-Referer': 'http://localhost:3000', 'X-Title': 'Smart Preach' })
         },
         signal: controller.signal,
         body: JSON.stringify({
-          model: 'llama3-8b-8192',
+          model,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
@@ -46,7 +58,10 @@ Keep reasons under 1 sentence. Be fast and accurate.`
       const data = await response.json()
 
       if (!response.ok || data.error) {
-        throw new Error(data.error || 'Failed to get AI suggestions')
+        const errorMessage = typeof data.error === 'string' ? data.error : 
+                           data.error?.message || JSON.stringify(data.error) || 
+                           'Failed to get AI suggestions'
+        throw new Error(errorMessage)
       }
 
       const content = data.choices?.[0]?.message?.content?.trim() || ''
@@ -69,7 +84,7 @@ Keep reasons under 1 sentence. Be fast and accurate.`
     } catch (fetchError: unknown) {
       clearTimeout(timeoutId)
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Request timeout - OpenRouter too slow')
+        throw new Error('Request timeout - AI service too slow')
       }
       throw fetchError
     }
