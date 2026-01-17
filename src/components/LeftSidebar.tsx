@@ -44,7 +44,7 @@ export default function LeftSidebar({
 
   const handleMenuClick = (viewId: SidebarView | 'live-session') => {
     if (viewId === 'notes') {
-      onOpenNotesModal?.()
+      window.open('/notes', '_blank')
       return
     }
     if (viewId === 'presentations') {

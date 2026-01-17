@@ -809,3 +809,246 @@ export async function getSessionStats(): Promise<{ totalSessions: number; active
     return { totalSessions: 0, activeSessions: 0 }
   }
 }
+
+export interface Note {
+  id: string
+  title: string
+  content: string
+  verses: string | null
+  user_id: string
+  is_favorite: boolean
+  created_at: number
+  updated_at: number
+}
+
+export async function createNote(userId: string, title: string, content: string, verses: string | null = null): Promise<{ success: boolean; error?: string, note?: Note }> {
+  try {
+    console.log('Creating note with:', { userId, title, content: content.substring(0, 100) })
+    
+    const turso = getTursoClient()
+    if (!turso) {
+      return { success: false, error: 'Database not available' }
+    }
+
+    const noteId = Date.now().toString()
+
+    await turso.execute({
+      sql: `INSERT INTO notes (id, title, content, verses, user_id)
+            VALUES (?, ?, ?, ?, ?)`,
+      args: [noteId, title, content, verses ? JSON.stringify(verses) : null, userId],
+    })
+
+    console.log('Note created successfully:', noteId)
+
+    const newNoteResult = await turso.execute({
+        sql: `SELECT * FROM notes WHERE id = ?`,
+        args: [noteId]
+    });
+
+    if (newNoteResult.rows.length === 0) {
+        return { success: false, error: "Failed to retrieve created note." };
+    }
+    
+    const row = newNoteResult.rows[0];
+    const newNote: Note = {
+      id: row.id as string,
+      title: row.title as string,
+      content: row.content as string,
+      verses: row.verses as string | null,
+      user_id: row.user_id as string,
+      is_favorite: Boolean(row.is_favorite),
+      created_at: typeof row.created_at === 'bigint' ? Number(row.created_at) : row.created_at as number,
+      updated_at: typeof row.updated_at === 'bigint' ? Number(row.updated_at) : row.updated_at as number,
+    };
+
+    return { success: true, note: newNote }
+  } catch (error) {
+    console.error('Error creating note:', error)
+    return { success: false, error: 'Failed to create note' }
+  }
+}
+
+export async function updateNote(noteId: string, title: string, content: string, verses: string | null = null): Promise<{ success: boolean; error?: string, note?: Note }> {
+  try {
+    console.log('Updating note:', { noteId, title, content: content.substring(0, 100) })
+    
+    const turso = getTursoClient()
+    if (!turso) {
+      return { success: false, error: 'Database not available' }
+    }
+
+    await turso.execute({
+      sql: `UPDATE notes SET title = ?, content = ?, verses = ?, updated_at = strftime('%s', 'now')
+            WHERE id = ?`,
+      args: [title, content, verses ? JSON.stringify(verses) : null, noteId],
+    })
+
+    console.log('Note updated successfully:', noteId)
+    
+    const updatedNoteResult = await turso.execute({
+        sql: `SELECT * FROM notes WHERE id = ?`,
+        args: [noteId]
+    });
+
+    if (updatedNoteResult.rows.length === 0) {
+        return { success: false, error: "Failed to retrieve updated note." };
+    }
+    
+    const row = updatedNoteResult.rows[0];
+    const updatedNote: Note = {
+      id: row.id as string,
+      title: row.title as string,
+      content: row.content as string,
+      verses: row.verses as string | null,
+      user_id: row.user_id as string,
+      is_favorite: Boolean(row.is_favorite),
+      created_at: typeof row.created_at === 'bigint' ? Number(row.created_at) : row.created_at as number,
+      updated_at: typeof row.updated_at === 'bigint' ? Number(row.updated_at) : row.updated_at as number,
+    };
+
+    return { success: true, note: updatedNote }
+  } catch (error) {
+    console.error('Error updating note:', error)
+    return { success: false, error: 'Failed to update note' }
+  }
+}
+
+export async function getNotes(userId: string): Promise<Note[]> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return []
+    }
+
+    const result = await turso.execute({
+      sql: `SELECT * FROM notes WHERE user_id = ? ORDER BY updated_at DESC`,
+      args: [userId],
+    })
+
+    return result.rows.map((row) => ({
+      id: row.id as string,
+      title: row.title as string,
+      content: row.content as string,
+      verses: row.verses as string | null,
+      user_id: row.user_id as string,
+      is_favorite: Boolean(row.is_favorite),
+      created_at: typeof row.created_at === 'bigint' ? Number(row.created_at) : row.created_at as number,
+      updated_at: typeof row.updated_at === 'bigint' ? Number(row.updated_at) : row.updated_at as number,
+    }))
+  } catch (error) {
+    console.error('Error fetching notes:', error)
+    return []
+  }
+}
+
+export async function getFavoriteNotes(userId: string): Promise<Note[]> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return []
+    }
+
+    const result = await turso.execute({
+      sql: `SELECT * FROM notes WHERE user_id = ? AND is_favorite = 1 ORDER BY updated_at DESC`,
+      args: [userId],
+    })
+
+    return result.rows.map((row) => ({
+      id: row.id as string,
+      title: row.title as string,
+      content: row.content as string,
+      verses: row.verses as string | null,
+      user_id: row.user_id as string,
+      is_favorite: Boolean(row.is_favorite),
+      created_at: typeof row.created_at === 'bigint' ? Number(row.created_at) : row.created_at as number,
+      updated_at: typeof row.updated_at === 'bigint' ? Number(row.updated_at) : row.updated_at as number,
+    }))
+  } catch (error) {
+    console.error('Error fetching favorite notes:', error)
+    return []
+  }
+}
+
+export async function toggleNoteFavorite(noteId: string): Promise<{ success: boolean; error?: string; isFavorite?: boolean }> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return { success: false, error: 'Database not available' }
+    }
+
+    // Get current favorite status
+    const currentResult = await turso.execute({
+      sql: `SELECT is_favorite FROM notes WHERE id = ? LIMIT 1`,
+      args: [noteId],
+    })
+
+    if (currentResult.rows.length === 0) {
+      return { success: false, error: 'Note not found' }
+    }
+
+    const currentFavorite = Boolean(currentResult.rows[0].is_favorite)
+    const newFavorite = !currentFavorite
+
+    // Update favorite status
+    await turso.execute({
+      sql: `UPDATE notes SET is_favorite = ?, updated_at = strftime('%s', 'now') WHERE id = ?`,
+      args: [newFavorite ? 1 : 0, noteId],
+    })
+
+    return { success: true, isFavorite: newFavorite }
+  } catch (error) {
+    console.error('Error toggling note favorite:', error)
+    return { success: false, error: 'Failed to toggle favorite' }
+  }
+}
+
+export async function deleteNote(noteId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return { success: false, error: 'Database not available' }
+    }
+
+    await turso.execute({
+      sql: `DELETE FROM notes WHERE id = ?`,
+      args: [noteId],
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting note:', error)
+    return { success: false, error: 'Failed to delete note' }
+  }
+}
+
+export async function getNoteById(noteId: string): Promise<Note | null> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return null
+    }
+
+    const result = await turso.execute({
+      sql: `SELECT * FROM notes WHERE id = ? LIMIT 1`,
+      args: [noteId],
+    })
+
+    if (result.rows.length > 0) {
+      const row = result.rows[0]
+      return {
+        id: row.id as string,
+        title: row.title as string,
+        content: row.content as string,
+        verses: row.verses as string | null,
+        user_id: row.user_id as string,
+        is_favorite: Boolean(row.is_favorite),
+        created_at: typeof row.created_at === 'bigint' ? Number(row.created_at) : row.created_at as number,
+        updated_at: typeof row.updated_at === 'bigint' ? Number(row.updated_at) : row.updated_at as number,
+      }
+    }
+    return null
+  } catch (error) {
+    console.error('Error fetching note:', error)
+    return null
+  }
+}

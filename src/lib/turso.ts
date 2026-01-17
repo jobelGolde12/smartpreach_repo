@@ -208,6 +208,32 @@ export async function initializeDatabase() {
     await db.execute(`
       CREATE INDEX IF NOT EXISTS idx_live_sessions_created_at ON live_sessions(created_at)
     `)
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS notes (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        verses TEXT,
+        user_id TEXT NOT NULL,
+        is_favorite BOOLEAN DEFAULT 0,
+        created_at INTEGER DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (user_id) REFERENCES "User"(id) ON DELETE CASCADE
+      )
+    `)
+
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id)
+    `)
+
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS idx_notes_is_favorite ON notes(is_favorite)
+    `)
+
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS idx_notes_created_at ON notes(created_at)
+    `)
   } catch (error) {
     console.error('Failed to initialize database:', error)
   }

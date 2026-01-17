@@ -117,6 +117,12 @@ function DashboardContent() {
       if (recognitionRef.current) {
         recognitionRef.current.stop()
       }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current)
+      }
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
     }
   }, [])
 
@@ -212,32 +218,41 @@ function DashboardContent() {
 
   // Track recently selected references to prevent redundant API calls
   const recentSelectionsRef = useRef<Set<string>>(new Set())
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleRecentSelect = useCallback(async (reference: string) => {
+    // Clear any existing timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current)
+    }
+
     // Prevent duplicate calls for the same reference
     if (recentSelectionsRef.current.has(reference)) {
       console.log('Recent selection already in progress, skipping:', reference)
       return
     }
 
-    recentSelectionsRef.current.add(reference)
-    setIsLoading(true)
-    try {
-      const response = await fetch(`/api/verses?q=${encodeURIComponent(reference)}&type=auto`)
-      const data = await response.json()
-      if (data.verses?.length > 0) {
-        setSearchedVerses(data.verses)
-        await handleVerseSelect(data.verses[0])
+    // Debounce the call to prevent rapid requests
+    debounceTimeoutRef.current = setTimeout(async () => {
+      recentSelectionsRef.current.add(reference)
+      setIsLoading(true)
+      try {
+        const response = await fetch(`/api/verses?q=${encodeURIComponent(reference)}&type=auto`)
+        const data = await response.json()
+        if (data.verses?.length > 0) {
+          setSearchedVerses(data.verses)
+          await handleVerseSelect(data.verses[0])
+        }
+      } catch (error) {
+        console.error('Error loading recent verse:', error)
+      } finally {
+        setIsLoading(false)
+        // Clean up after a short delay to allow for new selections
+        setTimeout(() => {
+          recentSelectionsRef.current.delete(reference)
+        }, 1000)
       }
-    } catch (error) {
-      console.error('Error loading recent verse:', error)
-    } finally {
-      setIsLoading(false)
-      // Clean up after a short delay to allow for new selections
-      setTimeout(() => {
-        recentSelectionsRef.current.delete(reference)
-      }, 1000)
-    }
+    }, 200) // 200ms debounce delay
   }, [handleVerseSelect])
 
   const handleSetDefaultVerse = useCallback(async (verse: BibleVerse) => {
@@ -277,29 +292,40 @@ function DashboardContent() {
     setShowRecentVerses(false)
   }, [])
 
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   const handleSearch = useCallback(async (query: string) => {
     console.log('handleSearch called with:', query)
-    setIsLoading(true)
-    try {
-      const response = await fetch(`/api/verses?q=${encodeURIComponent(query)}&type=auto`)
-      const data = await response.json()
-
-      console.log('API response:', data)
-
-      if (data.verses && data.verses.length > 0) {
-        console.log('Setting searched verses and selecting first verse:', data.verses[0])
-        setSearchedVerses(data.verses)
-        await handleVerseSelect(data.verses[0])
-      } else {
-        console.log('No verses found, checking local database')
-        setSearchedVerses([])
-      }
-    } catch (error) {
-      console.error('Error searching verses:', error)
-      setSearchedVerses([])
-    } finally {
-      setIsLoading(false)
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
     }
+
+    // Debounce search to prevent rapid API calls
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsLoading(true)
+      try {
+        const response = await fetch(`/api/verses?q=${encodeURIComponent(query)}&type=auto`)
+        const data = await response.json()
+
+        console.log('API response:', data)
+
+        if (data.verses && data.verses.length > 0) {
+          console.log('Setting searched verses and selecting first verse:', data.verses[0])
+          setSearchedVerses(data.verses)
+          await handleVerseSelect(data.verses[0])
+        } else {
+          console.log('No verses found, checking local database')
+          setSearchedVerses([])
+        }
+      } catch (error) {
+        console.error('Error searching verses:', error)
+        setSearchedVerses([])
+      } finally {
+        setIsLoading(false)
+      }
+    }, 300) // 300ms debounce delay for search
   }, [handleVerseSelect])
 
   const handleNextVerse = useCallback(async () => {
