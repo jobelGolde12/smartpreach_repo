@@ -30,9 +30,10 @@ export default function VerseDisplay({
   const [translatedText, setTranslatedText] = useState<string>('')
   const [isTranslating, setIsTranslating] = useState(false)
   const [textVisible, setTextVisible] = useState(true)
-  const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
-  const [showRecent, setShowRecent] = useState(true)
-  const [hoveredVerse, setHoveredVerse] = useState<BibleVerse | null>(null)
+const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
+    const [showRecent, setShowRecent] = useState(true)
+    const [hoveredVerse, setHoveredVerse] = useState<BibleVerse | null>(null)
+    const [recentScrollIndex, setRecentScrollIndex] = useState(0)
 
   const translateText = async (text: string, targetLanguage: string) => {
     if (targetLanguage === 'English') {
@@ -390,27 +391,62 @@ export default function VerseDisplay({
                 <ChevronDown className={`w-3 h-3 transition-transform ${showRecent ? 'rotate-180' : ''}`} />
               </button>
             </div>
-            {showRecent && (
-              <div className="flex flex-row gap-2 overflow-x-auto pb-2 scrollbar-thin max-w-full">
-                {recentVerses.map((v, i) => (
+{showRecent && (
+               <div className="relative">
+                 {recentScrollIndex > 0 && (
+                   <button
+                     onClick={() => setRecentScrollIndex(recentScrollIndex - 1)}
+                     className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-600"
+                     aria-label="Scroll left"
+                   >
+                     <ChevronLeft className="w-3 h-3" />
+                   </button>
+                 )}
+                 
+                 <div className="flex flex-row gap-2" style={{ marginLeft: recentScrollIndex > 0 ? '2rem' : '0', marginRight: '1rem' }}>
+                {recentVerses.slice(recentScrollIndex, recentScrollIndex + 8).map((v, i) => (
                   <div
                     key={i}
                     className="relative group text-xs whitespace-nowrap px-3 py-1 rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors min-w-fit flex-shrink-0"
-                    onMouseEnter={() => setHoveredVerse(v)}
-                    onMouseLeave={() => setHoveredVerse(null)}
+onMouseEnter={(e) => {
+                       setHoveredVerse(v)
+                       const tooltip = e.currentTarget.querySelector('.verse-tooltip') as HTMLElement
+                       if (tooltip) {
+                         const rect = e.currentTarget.getBoundingClientRect()
+                         Object.assign(tooltip.style, {
+                           position: 'fixed',
+                           top: `${rect.top + rect.height / 2}px`,
+                           left: `${rect.right + 15}px`,
+                           transform: 'translateY(-50%)',
+                           zIndex: '999999999'
+                         })
+                       }
+                     }}
+                     onMouseLeave={() => setHoveredVerse(null)}
                     onClick={() => onRecentSelect?.(v.reference)}
                   >
                     {v.reference}
                     {hoveredVerse?.reference === v.reference && (
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-[1001] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-2xl border rounded-lg p-2.5 text-xs max-w-md pointer-events-none whitespace-pre-wrap -translate-y-full mt-1 max-h-32 overflow-y-auto w-max border-gray-200 dark:border-gray-700">
-                        <div className="font-medium mb-1 text-gray-900 dark:text-gray-100">{v.reference}</div>
-                        <div className="leading-relaxed text-gray-800 dark:text-gray-200">{v.text}</div>
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-[999999999] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-2xl border rounded-lg p-4 text-sm font-serif leading-relaxed max-w-md pointer-events-none whitespace-pre-wrap -translate-y-full mt-1 max-h-40 overflow-y-auto w-max border-gray-200 dark:border-gray-700">
+                        <div className="font-semibold mb-2 text-gray-900 dark:text-gray-100 text-base">{v.reference}</div>
+                        <div className="leading-relaxed text-gray-800 dark:text-gray-200 text-sm">{v.text}</div>
                       </div>
                     )}
                   </div>
                 ))}
-              </div>
-            )}
+                 </div>
+                 
+                 {recentScrollIndex + 8 < recentVerses.length && (
+                   <button
+                     onClick={() => setRecentScrollIndex(recentScrollIndex + 1)}
+                     className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-600"
+                     aria-label="Scroll right"
+                   >
+                     <ChevronRight className="w-3 h-3" />
+                   </button>
+                 )}
+               </div>
+             )}
           </div>
         )}
       </div>
