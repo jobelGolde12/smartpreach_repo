@@ -1,267 +1,171 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, Type, Volume2, Palette, Bell, Shield, User } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { Type, Volume2, Palette, Moon, Sun, Monitor } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 
-type SettingsSection = 'appearance' | 'audio' | 'notifications' | 'privacy' | 'account'
 type Theme = 'light' | 'dark' | 'system'
 
 export default function Settings() {
-  const router = useRouter()
-  const [activeSection, setActiveSection] = useState<SettingsSection>('appearance')
   const [fontSize, setFontSize] = useState('medium')
-  const [volume, setVolume] = useState(75)
-  const [notifications, setNotifications] = useState(true)
-  const [emailNotifications, setEmailNotifications] = useState(false)
   const { theme, setTheme } = useTheme()
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    localStorage.removeItem('isLoggedIn')
-    localStorage.removeItem('userEmail')
-    localStorage.removeItem('userName')
-    localStorage.removeItem('userId')
-    router.push('/')
-  }
 
   if (theme === undefined) {
     return null
   }
 
-  const sidebarItems = [
-    { id: 'appearance' as SettingsSection, icon: Palette, label: 'Appearance' },
-    { id: 'audio' as SettingsSection, icon: Volume2, label: 'Audio' },
-    { id: 'notifications' as SettingsSection, icon: Bell, label: 'Notifications' },
-    { id: 'privacy' as SettingsSection, icon: Shield, label: 'Privacy' },
-    { id: 'account' as SettingsSection, icon: User, label: 'Account' },
-  ]
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">Customize your experience</p>
+        </div>
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'appearance':
-        return (
-          <div className="space-y-8">
-            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl p-8 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Font Size</h3>
-              <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-6">
+          {/* Font Size Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                  <Type className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Text Size</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Adjust interface text size</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex items-center justify-between gap-4">
                 {['small', 'medium', 'large'].map((size) => (
                   <button
                     key={size}
                     onClick={() => setFontSize(size)}
-                    className={`py-4 px-6 rounded-xl font-semibold transition-all duration-200 ${
+                    className={`flex-1 flex flex-col items-center gap-3 p-5 rounded-xl transition-all duration-200 ${
                       fontSize === size
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500 dark:border-blue-400'
+                        : 'bg-gray-50 dark:bg-gray-700 border-2 border-transparent hover:bg-gray-100 dark:hover:bg-gray-600'
                     }`}
                   >
-                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                    <div className="flex items-end gap-1">
+                      <div className={`rounded-full ${
+                        size === 'small' ? 'w-2 h-2' :
+                        size === 'medium' ? 'w-3 h-3' :
+                        'w-4 h-4'
+                      } ${fontSize === size ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-400 dark:bg-gray-500'}`} />
+                      <div className={`rounded-full ${
+                        size === 'small' ? 'w-3 h-3' :
+                        size === 'medium' ? 'w-4 h-4' :
+                        'w-5 h-5'
+                      } ${fontSize === size ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-400 dark:bg-gray-500'}`} />
+                      <div className={`rounded-full ${
+                        size === 'small' ? 'w-4 h-4' :
+                        size === 'medium' ? 'w-5 h-5' :
+                        'w-6 h-6'
+                      } ${fontSize === size ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-400 dark:bg-gray-500'}`} />
+                    </div>
+                    <span className={`text-sm font-medium ${
+                      fontSize === size
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-gray-700 dark:text-gray-300'
+                    }`}>
+                      {size.charAt(0).toUpperCase() + size.slice(1)}
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
+          </div>
 
-            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl p-8 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Theme</h3>
+          {/* Theme Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+                  <Palette className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Theme</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6">
               <div className="grid grid-cols-3 gap-4">
                 {(['light', 'dark', 'system'] as Theme[]).map((t) => {
-                  const Icon = t === 'light' ? Type : t === 'dark' ? Volume2 : Palette
+                  const Icon = t === 'light' ? Sun : t === 'dark' ? Moon : Monitor
                   return (
                     <button
                       key={t}
                       onClick={() => setTheme(t)}
-                      className={`flex flex-col items-center gap-3 p-6 rounded-xl transition-all duration-200 ${
+                      className={`flex flex-col items-center gap-4 p-5 rounded-xl transition-all duration-200 ${
                         theme === t
-                          ? 'bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-400 dark:border-indigo-500'
-                          : 'bg-gray-100 dark:bg-gray-700 border-2 border-transparent hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-500 dark:border-purple-400'
+                          : 'bg-gray-50 dark:bg-gray-700 border-2 border-transparent hover:bg-gray-100 dark:hover:bg-gray-600'
                       }`}
                     >
-                      <Icon className={`w-7 h-7 ${theme === t ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                      <span className={`text-sm font-medium ${theme === t ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                        {t.charAt(0).toUpperCase() + t.slice(1)}
-                      </span>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                        theme === t
+                          ? 'bg-purple-100 dark:bg-purple-800/30'
+                          : 'bg-gray-100 dark:bg-gray-600'
+                      }`}>
+                        <Icon className={`w-6 h-6 ${
+                          theme === t
+                            ? 'text-purple-600 dark:text-purple-400'
+                            : 'text-gray-600 dark:text-gray-400'
+                        }`} />
+                      </div>
+                      <div className="text-center">
+                        <span className={`text-sm font-medium ${
+                          theme === t
+                            ? 'text-purple-600 dark:text-purple-400'
+                            : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                          {t.charAt(0).toUpperCase() + t.slice(1)}
+                        </span>
+                      </div>
                     </button>
                   )
                 })}
               </div>
             </div>
           </div>
-        )
 
-      case 'audio':
-        return (
-          <div className="space-y-8">
-            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl p-8 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Master Volume</h3>
-              <div className="space-y-6">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={volume}
-                  onChange={(e) => setVolume(Number(e.target.value))}
-                  className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-purple-600"
-                />
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-medium">Quiet</span>
-                  <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">{volume}%</span>
-                  <span className="font-medium">Loud</span>
+          {/* Current Selection Display */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Current Preferences</h3>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <Type className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <span className="text-gray-700 dark:text-gray-300">Text Size</span>
                 </div>
+                <span className="font-medium text-gray-900 dark:text-white capitalize">
+                  {fontSize}
+                </span>
               </div>
-            </div>
-          </div>
-        )
-
-      case 'notifications':
-        return (
-          <div className="space-y-8">
-            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl p-8 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Notification Preferences</h3>
-              <div className="space-y-4">
-                <label className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl cursor-pointer">
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">Push Notifications</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Receive notifications on your device</p>
-                  </div>
-                  <button
-                    onClick={() => setNotifications(!notifications)}
-                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${notifications ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                  >
-                    <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${notifications ? 'translate-x-7' : ''}`} />
-                  </button>
-                </label>
-                <label className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl cursor-pointer">
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">Email Notifications</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Receive updates via email</p>
-                  </div>
-                  <button
-                    onClick={() => setEmailNotifications(!emailNotifications)}
-                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${emailNotifications ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                  >
-                    <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${emailNotifications ? 'translate-x-7' : ''}`} />
-                  </button>
-                </label>
-              </div>
-            </div>
-          </div>
-        )
-
-      case 'privacy':
-        return (
-          <div className="space-y-8">
-            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl p-8 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Data & Privacy</h3>
-              <div className="space-y-4">
-                <p className="text-gray-600 dark:text-gray-400">Manage your personal data and privacy settings.</p>
-                <button className="w-full py-3 px-6 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-xl font-medium transition-colors">
-                  Download My Data
-                </button>
-                <button className="w-full py-3 px-6 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl font-medium transition-colors">
-                  Delete Account
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-
-      case 'account':
-        return (
-          <div className="space-y-8">
-            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl p-8 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Profile</h3>
-              <div className="flex items-center gap-6 mb-8">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                  <User className="w-12 h-12 text-white" />
+              
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                <div className="flex items-center gap-3">
+                  {theme === 'light' ? (
+                    <Sun className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  ) : theme === 'dark' ? (
+                    <Moon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  ) : (
+                    <Monitor className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  )}
+                  <span className="text-gray-700 dark:text-gray-300">Theme</span>
                 </div>
-                <div>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-white">User Name</p>
-                  <p className="text-gray-600 dark:text-gray-400">user@example.com</p>
-                </div>
+                <span className="font-medium text-gray-900 dark:text-white capitalize">
+                  {theme}
+                </span>
               </div>
-               <div className="space-y-4">
-                 <button className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors shadow-lg shadow-blue-600/30">
-                   Edit Profile
-                 </button>
-                 <button className="w-full py-3 px-6 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-xl font-medium transition-colors">
-                   Change Password
-                 </button>
-                 <button
-                   onClick={handleLogout}
-                   className="w-full py-3 px-6 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-colors shadow-lg shadow-red-600/30"
-                 >
-                   Logout
-                 </button>
-               </div>
             </div>
           </div>
-        )
-
-      default:
-        return null
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 transition-colors duration-300">
-      <header className="h-14 flex-shrink-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-[1.3rem]">
-        <div className="h-full flex items-center justify-between max-w-7xl mx-auto">
-          <Link
-            href="/"
-            className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
-            aria-label="Back to home"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-          </Link>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Settings</h1>
-          <div className="w-10" />
         </div>
-      </header>
-
-      <div className="flex max-w-7xl mx-auto">
-        <aside className="w-64 flex-shrink-0 p-6 hidden lg:block">
-          <nav className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl p-4 shadow-sm border border-gray-200/50 dark:border-gray-700/50 sticky top-24">
-            <ul className="space-y-2">
-              {sidebarItems.map((item) => {
-                const Icon = item.icon
-                return (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => setActiveSection(item.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 ${
-                        activeSection === item.id
-                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="font-medium">{item.label}</span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </nav>
-        </aside>
-
-        <main className="flex-1 p-6">
-          <div className="max-w-3xl">
-            <div className="lg:hidden mb-6">
-              <select
-                value={activeSection}
-                onChange={(e) => setActiveSection(e.target.value as SettingsSection)}
-                className="w-full p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-medium"
-              >
-                {sidebarItems.map((item) => (
-                  <option key={item.id} value={item.id}>{item.label}</option>
-                ))}
-              </select>
-            </div>
-            {renderContent()}
-          </div>
-        </main>
       </div>
     </div>
   )

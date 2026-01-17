@@ -262,3 +262,233 @@ export async function getVerseIdByReference(reference: string): Promise<number |
     return null
   }
 }
+
+export async function deleteVerse(reference: string) {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return { success: false, error: 'Database not available' }
+    }
+
+    // Get the verse ID first
+    const verseId = await getVerseIdByReference(reference)
+    if (!verseId) {
+      return { success: false, error: 'Verse not found' }
+    }
+
+    // Delete related highlights first (foreign key constraint)
+    await turso.execute({
+      sql: `DELETE FROM highlights WHERE verse_id = ?`,
+      args: [verseId],
+    })
+
+    // Delete from favorites
+    await turso.execute({
+      sql: `DELETE FROM favorites WHERE verse_id = ?`,
+      args: [verseId],
+    })
+
+    // Delete the verse
+    await turso.execute({
+      sql: `DELETE FROM verses WHERE id = ?`,
+      args: [verseId],
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting verse:', error)
+    return { success: false, error: 'Failed to delete verse' }
+  }
+}
+
+export interface User {
+  id: string
+  name: string | null
+  email: string
+  emailVerified: string | null
+  image: string | null
+  profile_pic: string | null
+  contact_number: string | null
+  church_name: string | null
+  bio: string | null
+}
+
+export interface Profile {
+  id: number
+  user_id: string
+  profile_pic: string | null
+  contact_number: string | null
+  church_name: string | null
+  bio: string | null
+  updated_at: number
+}
+
+export async function getUserData(userId: string): Promise<User | null> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return null
+    }
+
+    const result = await turso.execute({
+      sql: `SELECT * FROM "User" WHERE id = ? LIMIT 1`,
+      args: [userId],
+    })
+
+    if (result.rows.length > 0) {
+      const row = result.rows[0]
+      return {
+        id: row.id as string,
+        name: row.name as string | null,
+        email: row.email as string,
+        emailVerified: row.emailVerified as string | null,
+        image: row.image as string | null,
+        profile_pic: row.profile_pic as string | null,
+        contact_number: row.contact_number as string | null,
+        church_name: row.church_name as string | null,
+        bio: row.bio as string | null,
+      }
+    }
+    return null
+  } catch (error) {
+    console.error('Error fetching user data:', error)
+    return null
+  }
+}
+
+export async function updateUserData(userId: string, userData: Partial<Pick<User, 'name' | 'email' | 'profile_pic' | 'contact_number' | 'church_name' | 'bio'>>): Promise<{ success: boolean; error?: string }> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return { success: false, error: 'Database not available' }
+    }
+
+    // Build dynamic update query
+    const updateFields = []
+    const args = []
+
+    if (userData.name !== undefined) {
+      updateFields.push('"name" = ?')
+      args.push(userData.name)
+    }
+    if (userData.email !== undefined) {
+      updateFields.push('"email" = ?')
+      args.push(userData.email)
+    }
+    if (userData.profile_pic !== undefined) {
+      updateFields.push('"profile_pic" = ?')
+      args.push(userData.profile_pic)
+    }
+    if (userData.contact_number !== undefined) {
+      updateFields.push('"contact_number" = ?')
+      args.push(userData.contact_number)
+    }
+    if (userData.church_name !== undefined) {
+      updateFields.push('"church_name" = ?')
+      args.push(userData.church_name)
+    }
+    if (userData.bio !== undefined) {
+      updateFields.push('"bio" = ?')
+      args.push(userData.bio)
+    }
+
+    if (updateFields.length === 0) {
+      return { success: true } // No changes to make
+    }
+
+    args.push(userId) // Add userId at the end
+
+    const sql = `UPDATE "User" SET ${updateFields.join(', ')} WHERE id = ?`
+
+    await turso.execute({
+      sql,
+      args,
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating user data:', error)
+    return { success: false, error: 'Failed to update user data' }
+  }
+}
+
+export async function getUserProfile(userId: string): Promise<Profile | null> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return null
+    }
+
+    const result = await turso.execute({
+      sql: `SELECT * FROM profiles WHERE user_id = ? LIMIT 1`,
+      args: [userId],
+    })
+
+    if (result.rows.length > 0) {
+      const row = result.rows[0]
+      return {
+        id: typeof row.id === 'bigint' ? Number(row.id) : row.id as number,
+        user_id: row.user_id as string,
+        profile_pic: row.profile_pic as string | null,
+        contact_number: row.contact_number as string | null,
+        church_name: row.church_name as string | null,
+        bio: row.bio as string | null,
+        updated_at: typeof row.updated_at === 'bigint' ? Number(row.updated_at) : row.updated_at as number,
+      }
+    }
+    return null
+  } catch (error) {
+    console.error('Error fetching user profile:', error)
+    return null
+  }
+}
+
+export async function updateUserProfile(userId: string, profileData: Partial<Omit<Profile, 'id' | 'user_id' | 'updated_at'>>): Promise<{ success: boolean; error?: string }> {
+  try {
+    const turso = getTursoClient()
+    if (!turso) {
+      return { success: false, error: 'Database not available' }
+    }
+
+    // Check if profile exists
+    const existing = await getUserProfile(userId)
+
+    if (existing) {
+      // Update existing profile
+      await turso.execute({
+        sql: `UPDATE profiles SET
+              profile_pic = ?,
+              contact_number = ?,
+              church_name = ?,
+              bio = ?,
+              updated_at = strftime('%s', 'now')
+              WHERE user_id = ?`,
+        args: [
+          profileData.profile_pic ?? existing.profile_pic,
+          profileData.contact_number ?? existing.contact_number,
+          profileData.church_name ?? existing.church_name,
+          profileData.bio ?? existing.bio,
+          userId
+        ],
+      })
+    } else {
+      // Create new profile
+      await turso.execute({
+        sql: `INSERT INTO profiles (user_id, profile_pic, contact_number, church_name, bio)
+              VALUES (?, ?, ?, ?, ?)`,
+        args: [
+          userId,
+          profileData.profile_pic || null,
+          profileData.contact_number || null,
+          profileData.church_name || null,
+          profileData.bio || null
+        ],
+      })
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating user profile:', error)
+    return { success: false, error: 'Failed to update profile' }
+  }
+}

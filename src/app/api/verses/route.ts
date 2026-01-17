@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchVerse, searchByKeyword, BibleVerse } from '@/lib/bibleApi'
-import { saveVerse, logSearch, getRecentVerses } from '@/lib/serverActions'
+import { saveVerse, logSearch, getRecentVerses, deleteVerse } from '@/lib/serverActions'
 import { searchVersesLocally } from '@/lib/turso'
 import { getChapterVerses } from '@/lib/bibleJson'
 
@@ -140,6 +140,31 @@ export async function POST(request: NextRequest) {
     console.error('API Error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to save verses' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { reference } = body
+
+    if (!reference) {
+      return NextResponse.json({ error: 'Reference is required' }, { status: 400 })
+    }
+
+    const result = await deleteVerse(reference)
+    
+    if (result.success) {
+      return NextResponse.json({ success: true })
+    } else {
+      return NextResponse.json({ error: result.error }, { status: 400 })
+    }
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to delete verse' },
       { status: 500 }
     )
   }

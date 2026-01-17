@@ -98,7 +98,11 @@ export async function initializeDatabase() {
         "name" TEXT,
         "email" TEXT NOT NULL,
         "emailVerified" DATETIME,
-        "image" TEXT
+        "image" TEXT,
+        "profile_pic" TEXT,
+        "contact_number" TEXT,
+        "church_name" TEXT,
+        "bio" TEXT
       )
     `)
 
@@ -155,6 +159,19 @@ export async function initializeDatabase() {
 
     await db.execute(`
       CREATE UNIQUE INDEX IF NOT EXISTS "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token")
+    `)
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL UNIQUE,
+        profile_pic TEXT,
+        contact_number TEXT,
+        church_name TEXT,
+        bio TEXT,
+        updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (user_id) REFERENCES "User"(id) ON DELETE CASCADE
+      )
     `)
   } catch (error) {
     console.error('Failed to initialize database:', error)
