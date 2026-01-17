@@ -2,22 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, ArrowLeft, Presentation, Download, Play, Sparkles, ChevronLeft, ChevronRight, Minimize2, BookOpen, FileUp } from 'lucide-react'
+import { X, ArrowLeft, Presentation as PresentationIcon, Download, Play, Sparkles, ChevronLeft, ChevronRight, Minimize2, BookOpen, FileUp } from 'lucide-react'
 import { parse, Text } from 'pptxtojson'
-
-interface PresentationSlide {
-  title: string
-  scripture?: string
-  content: string
-  notes?: string
-}
-
-interface Presentation {
-  id: string
-  topic: string
-  slides: PresentationSlide[]
-  createdAt: string
-}
+import { EnhancedPPTXProcessor } from '@/lib/pptxProcessor'
+import { PresentationSlide, Presentation } from '@/types/presentation'
 
 interface PresentationsModalProps {
   isOpen: boolean
@@ -167,7 +155,37 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
         alert('Please select a .pptx file')
         return
       }
+
       try {
+        // Try enhanced PPTX processing first
+        const processor = EnhancedPPTXProcessor.getInstance()
+        
+        try {
+          const result = await processor.processPPTXFile(file, {
+            themeProcess: true,
+            preserveFormatting: true,
+            extractImages: true,
+            slidesScale: '100'
+          })
+
+          // Store design data for later use in presentation display
+          if (result.designData) {
+            localStorage.setItem(`design-${result.presentation.id}`, JSON.stringify(result.designData))
+          }
+
+          const updated = [...presentations, result.presentation]
+          savePresentations(updated)
+          
+          // Close modal and redirect to presentation page
+          onClose()
+          router.push(`/presentation/${result.presentation.id}`)
+          e.target.value = ''
+          return
+        } catch (enhancedError) {
+          console.warn('Enhanced PPTX processing failed, falling back to basic parsing:', enhancedError)
+        }
+
+        // Fallback to basic parsing if enhanced processing fails
         const arrayBuffer = await file.arrayBuffer()
         const pptxData = await parse(arrayBuffer)
 
@@ -212,6 +230,7 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
         }
         const updated = [...presentations, newPresentation]
         savePresentations(updated)
+        
         // Close modal and redirect to presentation page
         onClose()
         router.push(`/presentation/${newPresentation.id}`)
@@ -239,9 +258,9 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
               </button>
             )}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Presentation className="w-6 h-6 text-white" />
-              </div>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <PresentationIcon className="w-6 h-6 text-white" />
+                </div>
               <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
                 {view === 'list' ? 'My Presentations' : selectedPresentation?.topic}
               </h2>
@@ -265,7 +284,7 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
                   <div className="text-center animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
                     <div className="relative mb-8">
                       <div className="w-24 h-24 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 dark:from-blue-900/30 dark:via-purple-900/30 dark:to-pink-900/30 rounded-3xl flex items-center justify-center mx-auto shadow-xl">
-                        <Presentation className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+                        <PresentationIcon className="w-12 h-12 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div className="absolute -top-2 -right-2 w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
                         <Sparkles className="w-5 h-5 text-white" />
@@ -292,7 +311,7 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                               <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                <Presentation className="w-7 h-7 text-white" />
+                                <PresentationIcon className="w-7 h-7 text-white" />
                               </div>
                               <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 truncate mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                 {presentation.topic}

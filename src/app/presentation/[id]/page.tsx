@@ -2,21 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Download, Play, ChevronLeft, ChevronRight, Minimize2, BookOpen, Presentation } from 'lucide-react'
-
-interface PresentationSlide {
-  title: string
-  scripture?: string
-  content: string
-  notes?: string
-}
-
-interface Presentation {
-  id: string
-  topic: string
-  slides: PresentationSlide[]
-  createdAt: string
-}
+import { ArrowLeft, Download, Play, ChevronLeft, ChevronRight, Minimize2, BookOpen, Presentation as PresentationIcon } from 'lucide-react'
+import { PresentationSlide, Presentation } from '@/types/presentation'
 
 export default function PresentationPage() {
   const router = useRouter()
@@ -27,6 +14,7 @@ export default function PresentationPage() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isPresentationMode, setIsPresentationMode] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [designData, setDesignData] = useState<any>(null)
 
   const loadPresentation = () => {
     const saved = localStorage.getItem('presentations')
@@ -36,6 +24,15 @@ export default function PresentationPage() {
         const found = presentations.find(p => p.id === id)
         if (found) {
           setPresentation(found)
+          // Load design data if available
+          const savedDesign = localStorage.getItem(`design-${id}`)
+          if (savedDesign) {
+            try {
+              setDesignData(JSON.parse(savedDesign))
+            } catch (error) {
+              console.error('Error loading design data:', error)
+            }
+          }
         } else {
           // Check sessionStorage for temp presentation
           const temp = sessionStorage.getItem('tempPresentation')
@@ -63,10 +60,106 @@ export default function PresentationPage() {
      }
    }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+   useEffect(() => {
+     // Inject custom CSS for preserved design
+     if (designData) {
+       const styleId = 'preserved-pptx-styles'
+       let styleElement = document.getElementById(styleId) as HTMLStyleElement
+       
+       if (!styleElement) {
+         styleElement = document.createElement('style')
+         styleElement.id = styleId
+         document.head.appendChild(styleElement)
+       }
+
+       const css = generatePreservedCSS(designData)
+       styleElement.textContent = css
+
+       return () => {
+         if (styleElement) {
+           styleElement.remove()
+         }
+       }
+     }
+   }, [designData])
+
+   const generatePreservedCSS = (design: any) => {
+     const { colors, fonts, layout } = design
+     return `
+       .preserved-pptx-slide {
+         ${layout?.width ? `width: ${layout.width};` : ''}
+         ${layout?.height ? `height: ${layout.height};` : ''}
+         ${layout?.padding ? `padding: ${layout.padding};` : ''}
+         ${layout?.margin ? `margin: ${layout.margin};` : ''}
+       }
+       
+       .preserved-pptx-slide h1,
+       .preserved-pptx-slide h2,
+       .preserved-pptx-slide h3 {
+         ${fonts?.[0] ? `font-family: ${fonts[0]};` : ''}
+         ${colors?.[0] ? `color: ${colors[0]};` : ''}
+       }
+       
+       .preserved-pptx-slide p,
+       .preserved-pptx-slide div,
+       .preserved-pptx-slide span {
+         ${fonts?.[0] ? `font-family: ${fonts[0]};` : ''}
+         ${colors?.[1] ? `color: ${colors[1]};` : ''}
+       }
+
+       .preserved-pptx-slide .scripture-text {
+         ${fonts?.[0] ? `font-family: ${fonts[0]};` : ''}
+         ${colors?.[2] ? `color: ${colors[2]};` : ''}
+         font-style: italic;
+       }
+     `
+   }
+
   const handleNextSlide = () => {
     if (presentation && currentSlide < presentation.slides.length - 1) {
       setCurrentSlide(currentSlide + 1)
     }
+  }
+
+  const getSlideStyle = (slide: PresentationSlide, index: number) => {
+    // If we have preserved design data, use it
+    if (designData && slide.background) {
+      return {
+        background: slide.background.color || 'transparent',
+        backgroundImage: slide.background.image ? `url(${slide.background.image})` : 'none',
+        backgroundSize: slide.background.size || 'cover',
+        backgroundPosition: slide.background.position || 'center',
+        color: slide.text?.color || '#ffffff',
+        fontFamily: slide.text?.fontFamily || 'inherit',
+        fontSize: slide.text?.fontSize || 'inherit',
+        fontWeight: slide.text?.fontWeight || 'inherit'
+      }
+    }
+
+    // Fallback to dynamic coloring based on slide index
+    const colors = [
+      'from-slate-900 via-blue-900 to-indigo-900',
+      'from-slate-900 via-emerald-900 to-teal-900',
+      'from-slate-900 via-orange-900 to-red-900',
+      'from-slate-900 via-purple-900 to-pink-900'
+    ]
+    
+    return {}
+  }
+
+  const getSlideClass = (index: number) => {
+    if (designData) {
+      return 'preserved-pptx-slide'
+    }
+
+    const colors = [
+      'from-slate-900 via-blue-900 to-indigo-900',
+      'from-slate-900 via-emerald-900 to-teal-900',
+      'from-slate-900 via-orange-900 to-red-900',
+      'from-slate-900 via-purple-900 to-pink-900'
+    ]
+    
+    return `bg-gradient-to-br ${colors[index % 4]}`
   }
 
   const handlePrevSlide = () => {
@@ -130,7 +223,7 @@ export default function PresentationPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <Presentation className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+          <PresentationIcon className="w-16 h-16 text-slate-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Presentation Not Found</h1>
           <p className="text-slate-600 dark:text-slate-400 mb-6">The presentation you&apos;re looking for doesn&apos;t exist.</p>
           <button
@@ -242,12 +335,8 @@ export default function PresentationPage() {
             </button>
 
             <div className="w-full max-w-6xl h-full max-h-[80vh] flex flex-col">
-              <div className={`flex-1 rounded-3xl shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-4 duration-700 ${
-                currentSlide % 4 === 0 ? 'bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900' :
-                currentSlide % 4 === 1 ? 'bg-gradient-to-br from-slate-900 via-emerald-900 to-teal-900' :
-                currentSlide % 4 === 2 ? 'bg-gradient-to-br from-slate-900 via-orange-900 to-red-900' :
-                'bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900'
-              }`}>
+              <div className={`flex-1 rounded-3xl shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-4 duration-700 ${getSlideClass(currentSlide)}`}
+                   style={getSlideStyle(presentation.slides[currentSlide], currentSlide)}>
                 {/* Modern Background Elements */}
                 <div className="absolute inset-0 opacity-20">
                   <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1),transparent_50%)]"></div>
@@ -300,14 +389,15 @@ export default function PresentationPage() {
                     {/* Scripture Display */}
                     {presentation.slides[currentSlide].scripture && (
                       <div className="mb-6">
-                        <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl backdrop-blur-md border ${
-                          currentSlide % 4 === 0 ? 'bg-blue-500/20 border-blue-400/30 text-blue-100' :
-                          currentSlide % 4 === 1 ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-100' :
-                          currentSlide % 4 === 2 ? 'bg-orange-500/20 border-orange-400/30 text-orange-100' :
-                          'bg-purple-500/20 border-purple-400/30 text-purple-100'
+                        <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl backdrop-blur-md border scripture-text ${
+                          designData ? 'bg-white/10 border-white/20 text-white/80' :
+                          (currentSlide % 4 === 0 ? 'bg-blue-500/20 border-blue-400/30 text-blue-100' :
+                           currentSlide % 4 === 1 ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-100' :
+                           currentSlide % 4 === 2 ? 'bg-orange-500/20 border-orange-400/30 text-orange-100' :
+                           'bg-purple-500/20 border-purple-400/30 text-purple-100')
                         }`}>
                           <BookOpen className="w-5 h-5 flex-shrink-0" />
-                          <span className="font-medium text-sm tracking-wide">
+                          <span className="font-medium text-sm tracking-wide scripture-text">
                             {presentation.slides[currentSlide].scripture}
                           </span>
                         </div>
