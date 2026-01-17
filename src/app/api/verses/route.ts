@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchVerse, searchByKeyword, BibleVerse } from '@/lib/bibleApi'
-import { saveVerse, logSearch, getRecentVerses, deleteVerse } from '@/lib/serverActions'
+import { saveVerse, logSearch, getRecentVerses, deleteVerse, deleteAllRecentVerses } from '@/lib/serverActions'
 import { searchVersesLocally } from '@/lib/turso'
 import { getChapterVerses } from '@/lib/bibleJson'
 
@@ -148,7 +148,17 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json()
-    const { reference } = body
+    const { reference, deleteAll } = body
+
+    if (deleteAll) {
+      const result = await deleteAllRecentVerses()
+      
+      if (result.success) {
+        return NextResponse.json({ success: true })
+      } else {
+        return NextResponse.json({ error: result.error }, { status: 400 })
+      }
+    }
 
     if (!reference) {
       return NextResponse.json({ error: 'Reference is required' }, { status: 400 })

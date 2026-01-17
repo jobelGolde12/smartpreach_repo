@@ -9,6 +9,7 @@ import VerseSidebar from '@/components/VerseSidebar'
 import LeftSidebar from '@/components/LeftSidebar'
 import NotesModal from '@/components/NotesModal'
 import PresentationsModal from '@/components/PresentationsModal'
+import LiveSessionSync from '@/components/LiveSessionSync'
 import { BibleVerse } from '@/lib/bibleApi'
 import { useSession } from 'next-auth/react'
 import { Menu, X, BookOpen, User, Settings, Languages, Mic, MicOff } from 'lucide-react'
@@ -100,6 +101,9 @@ function DashboardContent() {
   const [notes, setNotes] = useState<Note[]>([])
   const [notesModalOpen, setNotesModalOpen] = useState(false)
   const [presentationsModalOpen, setPresentationsModalOpen] = useState(false)
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
+  const [isBlackout, setIsBlackout] = useState(false)
+  const [sessionFontSize, setSessionFontSize] = useState(100)
 
   useEffect(() => {
     isListeningRef.current = isListening
@@ -290,6 +294,18 @@ function DashboardContent() {
 
   const handleOpenPresentationsModal = () => {
     setPresentationsModalOpen(true)
+  }
+
+  const handleSessionUpdate = (session: any) => {
+    setActiveSessionId(session?.id || null)
+  }
+
+  const handleBlackoutChange = (blackout: boolean) => {
+    setIsBlackout(blackout)
+  }
+
+  const handleFontSizeChange = (fontSize: number) => {
+    setSessionFontSize(fontSize)
   }
 
   const extractVerseFromText = (text: string): string | null => {
@@ -495,9 +511,17 @@ function DashboardContent() {
           onToggleCollapse={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
           onOpenNotesModal={handleOpenNotesModal}
           onOpenPresentationsModal={handleOpenPresentationsModal}
+          onSessionUpdate={handleSessionUpdate}
         />
 
         <div className="flex-1 flex flex-col overflow-hidden">
+          <LiveSessionSync
+            sessionId={activeSessionId}
+            currentVerse={selectedVerse}
+            onVerseChange={handleVerseSelect}
+            onBlackoutChange={handleBlackoutChange}
+            onFontSizeChange={handleFontSizeChange}
+          />
           <VerseDisplay
             verse={selectedVerse}
             isLoading={isLoading}
@@ -508,6 +532,8 @@ function DashboardContent() {
             selectedLanguage={selectedLanguage}
             onRecentSelect={handleRecentSelect}
             setDefaultVerse={handleSetDefaultVerse}
+            isBlackout={isBlackout}
+            fontSize={sessionFontSize}
           />
         </div>
 

@@ -173,6 +173,41 @@ export async function initializeDatabase() {
         FOREIGN KEY (user_id) REFERENCES "User"(id) ON DELETE CASCADE
       )
     `)
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS presentations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        verses TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        created_at INTEGER DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (user_id) REFERENCES "User"(id) ON DELETE CASCADE
+      )
+    `)
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS live_sessions (
+        id TEXT PRIMARY KEY,
+        presentation_id INTEGER,
+        current_reference TEXT,
+        slide_index INTEGER DEFAULT 0,
+        font_size INTEGER DEFAULT 100,
+        is_blackout BOOLEAN DEFAULT 0,
+        created_at INTEGER DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (presentation_id) REFERENCES presentations(id) ON DELETE SET NULL
+      )
+    `)
+
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS idx_presentations_user_id ON presentations(user_id)
+    `)
+
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS idx_live_sessions_created_at ON live_sessions(created_at)
+    `)
   } catch (error) {
     console.error('Failed to initialize database:', error)
   }

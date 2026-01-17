@@ -15,6 +15,8 @@ interface VerseDisplayProps {
   selectedLanguage?: string
   onRecentSelect?: (reference: string) => void
   setDefaultVerse?: (verse: BibleVerse) => void
+  isBlackout?: boolean
+  fontSize?: number
 }
 
 export default function VerseDisplay({
@@ -27,6 +29,8 @@ export default function VerseDisplay({
   selectedLanguage = 'King James Version',
   onRecentSelect,
   setDefaultVerse,
+  isBlackout = false,
+  fontSize = 100,
 }: VerseDisplayProps) {
   const [isModal, setIsModal] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
@@ -37,6 +41,7 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
     const [showRecent, setShowRecent] = useState(true)
     const [hoveredVerse, setHoveredVerse] = useState<BibleVerse | null>(null)
     const [recentScrollIndex, setRecentScrollIndex] = useState(0)
+    const [verseToRestore, setVerseToRestore] = useState<BibleVerse | null>(null)
     
     // Highlighting states
     const [highlights, setHighlights] = useState<any[]>([])
@@ -126,6 +131,38 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
       console.error('Error deleting verse:', error)
     }
   }, [fetchRecentVerses])
+
+  const deleteAllRecentVerses = useCallback(async () => {
+    try {
+      // Store current verse to restore when verse changes
+      let currentVerseToRestore: BibleVerse | null = null
+      if (verse) {
+        const matchingVerse = recentVerses.find(v => v.reference === verse.reference)
+        if (matchingVerse) {
+          currentVerseToRestore = matchingVerse
+        }
+      }
+      
+      // Store verse to restore
+      setVerseToRestore(currentVerseToRestore)
+
+      const response = await fetch('/api/verses', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deleteAll: true }),
+      })
+      
+      if (response.ok) {
+        // Refresh the recent verses list
+        await fetchRecentVerses()
+        console.log('All recent verses deleted successfully')
+      } else {
+        console.error('Failed to delete all recent verses:', await response.text())
+      }
+    } catch (error) {
+      console.error('Error deleting all recent verses:', error)
+    }
+  }, [fetchRecentVerses, recentVerses, verse])
 
 
 
@@ -322,10 +359,33 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
    useEffect(() => {
      if (verse) {
        saveCurrentVerse()
+       
+       // Restore previous verse to recent verses if it was stored
+       if (verseToRestore && verseToRestore.reference !== verse.reference) {
+         // Re-save the previous verse to recent verses
+         fetch('/api/verses', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+             reference: verseToRestore.reference,
+             verses: [verseToRestore],
+           }),
+         }).then(() => {
+           // Refresh the recent verses list
+           fetchRecentVerses()
+           // Clear the verse to restore after adding it back
+           setVerseToRestore(null)
+         }).catch(error => {
+           console.error('Error restoring verse:', error)
+         })
+       }
      }
-   }, [verse, saveCurrentVerse])
+   }, [verse, saveCurrentVerse, verseToRestore, fetchRecentVerses])
 
    const displayText = translatedText || verse?.text || ''
+
+   // Apply blackout effect
+   const shouldShowBlackout = isBlackout && verse !== null
 
   const handleTextSelection = useCallback(() => {
     const selection = window.getSelection()
@@ -365,6 +425,19 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
   const shouldMoveNavUp = displayText.length >= 330
 
   const getFontSizeClass = () => {
+    // If session fontSize is set, use it instead of auto-sizing
+    if (fontSize !== 100) {
+      const baseSize = fontSize / 100
+      if (baseSize < 0.7) return 'text-xs md:text-sm'
+      if (baseSize < 0.85) return 'text-sm md:text-base'
+      if (baseSize < 1) return 'text-base md:text-lg'
+      if (baseSize < 1.15) return 'text-lg md:text-xl'
+      if (baseSize < 1.3) return 'text-xl md:text-2xl'
+      if (baseSize < 1.5) return 'text-2xl md:text-3xl'
+      return 'text-3xl md:text-4xl'
+    }
+
+    // Original auto-sizing logic
     const textLength = displayText.length
     const wordCount = displayText.split(/\s+/).filter(word => word.length > 0).length
     const lineCount = displayText.split('\n').length
@@ -495,7 +568,7 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
             <div className="relative w-full min-h-0">
               <blockquote 
                 className={`font-serif leading-relaxed text-gray-800 dark:text-gray-100 max-w-6xl mx-auto transition-all duration-300 max-h-[50vh] overflow-y-auto ${getModalFontSizeClass()} ${
-                  textVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                  textVisible && !shouldShowBlackout ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
                 } select-text`}
                 onMouseUp={handleTextSelection}
                 onSelect={handleTextSelection}
@@ -505,6 +578,11 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
               {isTranslating && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              {shouldShowBlackout && (
+                <div className="absolute inset-0 bg-black transition-opacity duration-500 flex items-center justify-center">
+                  <div className="text-white text-lg font-medium">Screen Hidden</div>
                 </div>
               )}
             </div>
@@ -580,7 +658,7 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
           <div className="relative w-full min-h-0">
             <blockquote 
               className={`font-serif leading-relaxed text-gray-800 dark:text-gray-100 max-w-5xl mx-auto transition-all duration-500 max-h-[45vh] overflow-y-auto ${getFontSizeClass()} ${
-                textVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
+                textVisible && !shouldShowBlackout ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
               } relative select-text`}
               onMouseUp={handleTextSelection}
               onSelect={handleTextSelection}
@@ -590,6 +668,11 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
             {isTranslating && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {shouldShowBlackout && (
+              <div className="absolute inset-0 bg-black transition-opacity duration-500 flex items-center justify-center">
+                <div className="text-white text-lg font-medium">Screen Hidden</div>
               </div>
             )}
           </div>
@@ -642,12 +725,21 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
                 Recent ({recentVerses.length})
               </p>
-              <button
-                onClick={() => setShowRecent(prev => !prev)}
-                className="p-1 rounded hover:bg-gray-200/50 dark:hover:bg-gray-700/50 transition-colors flex items-center"
-              >
-                <ChevronDown className={`w-3 h-3 transition-transform ${showRecent ? 'rotate-180' : ''}`} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={deleteAllRecentVerses}
+                  className="group p-1 rounded hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="w-3 h-3 text-gray-500 dark:text-gray-400 group-hover:text-red-500 dark:group-hover:text-red-400" />
+                </button>
+                <button
+                  onClick={() => setShowRecent(prev => !prev)}
+                  className="p-1 rounded hover:bg-gray-200/50 dark:hover:bg-gray-700/50 transition-colors flex items-center"
+                >
+                  <ChevronDown className={`w-3 h-3 transition-transform ${showRecent ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
             </div>
 {showRecent && (
                <div className="relative">

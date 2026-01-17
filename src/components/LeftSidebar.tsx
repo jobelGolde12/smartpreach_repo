@@ -2,8 +2,9 @@
 
 import { useState, useRef } from 'react'
 import { BibleVerse } from '@/lib/bibleApi'
-import { ChevronLeft, ChevronRight, X, BookOpen, Layout, FileText, ArrowLeft, Presentation } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, BookOpen, Layout, FileText, ArrowLeft, Presentation, Wifi } from 'lucide-react'
 import BibleNavigatorContent, { BibleNavigatorRef } from './BibleNavigatorContent'
+import LiveSessionController from './LiveSessionController'
 
 interface LeftSidebarProps {
   onSelectVerse: (verse: BibleVerse) => void
@@ -14,11 +15,12 @@ interface LeftSidebarProps {
   onToggleCollapse?: () => void
   onOpenNotesModal?: () => void
   onOpenPresentationsModal?: () => void
+  onSessionUpdate?: (session: any) => void
 }
 
 type BibleNavView = 'books' | 'chapters' | 'verses'
 
-type SidebarView = 'menu' | 'bible' | 'notes' | 'presentations'
+type SidebarView = 'menu' | 'bible' | 'notes' | 'presentations' | 'live-session'
 
 export default function LeftSidebar({
   onSelectVerse,
@@ -28,6 +30,7 @@ export default function LeftSidebar({
   onToggleCollapse,
   onOpenNotesModal,
   onOpenPresentationsModal,
+  onSessionUpdate,
 }: LeftSidebarProps) {
   const [currentView, setCurrentView] = useState<SidebarView>('menu')
   const [bibleNavView, setBibleNavView] = useState<BibleNavView>('books')
@@ -38,6 +41,7 @@ export default function LeftSidebar({
     { id: 'bible' as SidebarView, label: 'Bible', icon: BookOpen },
     { id: 'notes' as SidebarView, label: 'Notes', icon: FileText },
     { id: 'presentations' as SidebarView, label: 'Presentations', icon: Presentation },
+    { id: 'live-session' as SidebarView, label: 'Live Session', icon: Wifi },
   ]
 
   const handleMenuClick = (viewId: SidebarView) => {
@@ -161,7 +165,12 @@ export default function LeftSidebar({
                   onExitBibleNavigator={handleExitBibleNavigator}
                 />
               )}
- 
+
+              {currentView === 'live-session' && (
+                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                  <LiveSessionController onSessionUpdate={onSessionUpdate} />
+                </div>
+              )}
 
           </div>
         )}
