@@ -2,9 +2,10 @@
 
 import { useState, useRef } from 'react'
 import { BibleVerse } from '@/lib/bibleApi'
-import { ChevronLeft, ChevronRight, X, BookOpen, Layout, FileText, ArrowLeft, Presentation, Wifi } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, BookOpen, Layout, FileText, Presentation, Wifi } from 'lucide-react'
 import BibleNavigatorContent, { BibleNavigatorRef } from './BibleNavigatorContent'
-import LiveSessionController from './LiveSessionController'
+import LiveSessionModal from './LiveSessionModal'
+import { LiveSession } from '@/lib/serverActions'
 
 interface LeftSidebarProps {
   onSelectVerse: (verse: BibleVerse) => void
@@ -15,12 +16,10 @@ interface LeftSidebarProps {
   onToggleCollapse?: () => void
   onOpenNotesModal?: () => void
   onOpenPresentationsModal?: () => void
-  onSessionUpdate?: (session: any) => void
+  onSessionUpdate?: (session: LiveSession | null) => void
 }
 
-type BibleNavView = 'books' | 'chapters' | 'verses'
-
-type SidebarView = 'menu' | 'bible' | 'notes' | 'presentations' | 'live-session'
+type SidebarView = 'menu' | 'bible' | 'notes' | 'presentations'
 
 export default function LeftSidebar({
   onSelectVerse,
@@ -33,24 +32,27 @@ export default function LeftSidebar({
   onSessionUpdate,
 }: LeftSidebarProps) {
   const [currentView, setCurrentView] = useState<SidebarView>('menu')
-  const [bibleNavView, setBibleNavView] = useState<BibleNavView>('books')
-  const [isBibleNavigatorAtBooksLevel, setIsBibleNavigatorAtBooksLevel] = useState(true)
+  const [isLiveSessionModalOpen, setLiveSessionModalOpen] = useState(false)
   const bibleNavigatorRef = useRef<BibleNavigatorRef>(null)
 
   const menuItems = [
     { id: 'bible' as SidebarView, label: 'Bible', icon: BookOpen },
     { id: 'notes' as SidebarView, label: 'Notes', icon: FileText },
     { id: 'presentations' as SidebarView, label: 'Presentations', icon: Presentation },
-    { id: 'live-session' as SidebarView, label: 'Live Session', icon: Wifi },
+    { id: 'live-session', label: 'Live Session', icon: Wifi },
   ]
 
-  const handleMenuClick = (viewId: SidebarView) => {
+  const handleMenuClick = (viewId: SidebarView | 'live-session') => {
     if (viewId === 'notes') {
       onOpenNotesModal?.()
       return
     }
     if (viewId === 'presentations') {
       onOpenPresentationsModal?.()
+      return
+    }
+    if (viewId === 'live-session') {
+      setLiveSessionModalOpen(true)
       return
     }
     if (currentView === viewId) {
@@ -60,21 +62,10 @@ export default function LeftSidebar({
     }
   }
 
-  const handleBackToMenu = () => {
-    if (currentView === 'bible') {
-      bibleNavigatorRef.current?.handleBack()
-    } else {
-      setCurrentView('menu')
-    }
-  }
-
   const handleExitBibleNavigator = () => {
     setCurrentView('menu')
   }
 
-  const handleBibleNavigatorViewStateChange = (isAtBooksLevel: boolean) => {
-    setIsBibleNavigatorAtBooksLevel(isAtBooksLevel)
-  }
 
   return (
     <>
@@ -144,7 +135,7 @@ export default function LeftSidebar({
                   {menuItems.map((item) => (
                     <button
                       key={item.id}
-                      onClick={() => handleMenuClick(item.id)}
+                      onClick={() => handleMenuClick(item.id as SidebarView | 'live-session')}
                       className="w-full flex items-center gap-3 px-4 py-3 text-left rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-800 transition-all group dark:text-gray-200"
                     >
                       <item.icon className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
@@ -160,16 +151,8 @@ export default function LeftSidebar({
                   ref={bibleNavigatorRef}
                   onSelectVerse={onSelectVerse}
                   isCollapsed={isCollapsed}
-                  onViewChange={setBibleNavView}
-                  onViewStateChange={handleBibleNavigatorViewStateChange}
                   onExitBibleNavigator={handleExitBibleNavigator}
                 />
-              )}
-
-              {currentView === 'live-session' && (
-                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                  <LiveSessionController onSessionUpdate={onSessionUpdate} />
-                </div>
               )}
 
           </div>
@@ -186,6 +169,13 @@ export default function LeftSidebar({
           </div>
         )}
       </aside>
+
+      {isLiveSessionModalOpen && (
+        <LiveSessionModal
+          onClose={() => setLiveSessionModalOpen(false)}
+          onSessionUpdate={onSessionUpdate}
+        />
+      )}
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

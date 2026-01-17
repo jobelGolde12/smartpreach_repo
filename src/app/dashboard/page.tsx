@@ -175,7 +175,32 @@ function DashboardContent() {
     } catch (error) {
       console.error('Error saving verse:', error)
     }
-  }, [])
+
+    // Update live session with current verse reference
+    if (activeSessionId) {
+      console.log('Dashboard: Updating live session', activeSessionId, 'with reference:', verse.reference)
+      try {
+        const response = await fetch('/api/live-sessions', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: activeSessionId,
+            updates: { current_reference: verse.reference }
+          })
+        })
+        
+        if (!response.ok) {
+          console.error('Dashboard: Error updating live session:', await response.text())
+        } else {
+          console.log('Dashboard: Live session updated successfully')
+        }
+      } catch (error) {
+        console.error('Dashboard: Error updating live session:', error)
+      }
+    } else {
+      console.log('Dashboard: No active session, skipping live session update')
+    }
+  }, [activeSessionId])
 
   // Track recently selected references to prevent redundant API calls
   const recentSelectionsRef = useRef<Set<string>>(new Set())

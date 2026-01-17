@@ -10,8 +10,6 @@ type ViewState = 'books' | 'chapters' | 'verses'
 interface BibleNavigatorContentProps {
   onSelectVerse: (verse: BibleVerse) => void
   isCollapsed?: boolean
-  onViewChange?: (view: ViewState) => void
-  onViewStateChange?: (isAtBooksLevel: boolean) => void
   onExitBibleNavigator?: () => void
 }
 
@@ -22,8 +20,6 @@ export interface BibleNavigatorRef {
 const BibleNavigatorContent = forwardRef<BibleNavigatorRef, BibleNavigatorContentProps>(({
   onSelectVerse,
   isCollapsed = false,
-  onViewChange,
-  onViewStateChange,
   onExitBibleNavigator,
 }, ref) => {
   const [viewState, setViewState] = useState<ViewState>('books')
@@ -35,20 +31,14 @@ const BibleNavigatorContent = forwardRef<BibleNavigatorRef, BibleNavigatorConten
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTestament, setSelectedTestament] = useState<'Old' | 'New' | 'All'>('All')
 
-  useEffect(() => {
-    onViewStateChange?.(viewState === 'books')
-  }, [viewState, onViewStateChange])
-
   const handleBack = () => {
     if (viewState === 'verses') {
       setViewState('chapters')
       setVerses([])
-      onViewChange?.('chapters')
     } else if (viewState === 'chapters') {
       setViewState('books')
       setSelectedBook(null)
       setSelectedChapter(null)
-      onViewChange?.('books')
     } else {
       // At books level, call the parent back handler
       onExitBibleNavigator?.()
@@ -79,14 +69,12 @@ const BibleNavigatorContent = forwardRef<BibleNavigatorRef, BibleNavigatorConten
     setSelectedChapter(null)
     setVerses([])
     setViewState('chapters')
-    onViewChange?.('chapters')
   }
 
   const handleChapterSelect = async (chapter: number) => {
     setSelectedChapter(chapter)
     setLoadingVerses(true)
     setViewState('verses')
-    onViewChange?.('verses')
 
     try {
       const reference = `${selectedBook!.name} ${chapter}`

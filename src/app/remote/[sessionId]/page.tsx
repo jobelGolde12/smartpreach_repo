@@ -93,22 +93,68 @@ function RemoteControllerContent() {
   const nextVerse = async () => {
     if (!session || !session.current_reference) return
 
-    const verses = [...recentVerses, ...favorites]
-    const currentIndex = verses.findIndex(v => v.reference === session.current_reference)
+    console.log('Remote: nextVerse called for:', session.current_reference)
     
-    if (currentIndex < verses.length - 1) {
-      await updateSessionState({ current_reference: verses[currentIndex + 1].reference })
+    try {
+      const parsed = parseVerseReference(session.current_reference)
+      
+      if (!parsed) {
+        console.warn('Remote: Could not parse verse reference:', session.current_reference)
+        return
+      }
+
+      const { book, chapter, verse } = parsed
+
+      // Fetch next verse
+      const nextReference = `${book} ${chapter}:${verse + 1}`
+      const response = await fetch(`/api/verses?q=${encodeURIComponent(nextReference)}&type=auto`)
+      const data = await response.json()
+      
+      if (data.verses?.length > 0) {
+        console.log('Remote: Found next verse:', data.verses[0].reference)
+        await updateSessionState({ current_reference: data.verses[0].reference })
+      } else {
+        console.log('Remote: No next verse found for:', nextReference)
+      }
+    } catch (error) {
+      console.error('Remote: Error getting next verse:', error)
     }
   }
 
   const previousVerse = async () => {
     if (!session || !session.current_reference) return
 
-    const verses = [...recentVerses, ...favorites]
-    const currentIndex = verses.findIndex(v => v.reference === session.current_reference)
+    console.log('Remote: previousVerse called for:', session.current_reference)
     
-    if (currentIndex > 0) {
-      await updateSessionState({ current_reference: verses[currentIndex - 1].reference })
+    try {
+      const parsed = parseVerseReference(session.current_reference)
+      
+      if (!parsed) {
+        console.warn('Remote: Could not parse verse reference:', session.current_reference)
+        return
+      }
+
+      const { book, chapter, verse } = parsed
+
+      // Only allow previous if verse > 1 (same as main dashboard logic)
+      if (verse <= 1) {
+        console.log('Remote: Cannot go to previous verse - already at verse 1')
+        return
+      }
+
+      // Fetch previous verse
+      const prevReference = `${book} ${chapter}:${verse - 1}`
+      const response = await fetch(`/api/verses?q=${encodeURIComponent(prevReference)}&type=auto`)
+      const data = await response.json()
+      
+      if (data.verses?.length > 0) {
+        console.log('Remote: Found previous verse:', data.verses[0].reference)
+        await updateSessionState({ current_reference: data.verses[0].reference })
+      } else {
+        console.log('Remote: No previous verse found for:', prevReference)
+      }
+    } catch (error) {
+      console.error('Remote: Error getting previous verse:', error)
     }
   }
 
@@ -129,8 +175,33 @@ function RemoteControllerContent() {
     await updateSessionState({ font_size: newSize })
   }
 
+  const parseVerseReference = (reference: string) => {
+    const referencePattern = /^(.+?)\s+(\d+):(\d+)$/
+    const match = reference.match(referencePattern)
+    
+    if (!match) {
+      return null
+    }
+
+    const [, book, chapterStr, verseStr] = match
+    return {
+      book,
+      chapter: parseInt(chapterStr, 10),
+      verse: parseInt(verseStr, 10)
+    }
+  }
+
   const selectVerse = async (reference: string) => {
+    console.log('Remote: selectVerse called with:', reference)
     await updateSessionState({ current_reference: reference })
+  }
+
+  // Helper to check if previous button should be disabled
+  const canGoPrevious = () => {
+    if (!session?.current_reference) return false
+    
+    const parsed = parseVerseReference(session.current_reference)
+    return parsed ? parsed.verse > 1 : false
   }
 
   if (loading) {
@@ -196,7 +267,7 @@ function RemoteControllerContent() {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <button
             onClick={previousVerse}
-            disabled={!session.current_reference}
+            disabled={!session.current_reference || !canGoPrevious()}
             className="flex flex-col items-center justify-center p-4 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:opacity-50 rounded-xl transition-colors"
           >
             <ChevronLeft size={32} />

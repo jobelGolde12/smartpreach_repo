@@ -338,7 +338,7 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
         handleLanguageChange(selectedLanguage)
         fetchHighlights(verse.reference)
       }
-    }, [selectedLanguage, verse, fetchHighlights]) // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+    }, [selectedLanguage, verse, fetchHighlights]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchRecentVerses()
@@ -768,7 +768,7 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
                             top: `${rect.top + rect.height / 2}px`,
                             left: `${rect.right + 15}px`,
                             transform: 'translateY(-50%)',
-                            zIndex: '999999999'
+                            zIndex: '40'
                           })
                         }
                       }}
@@ -780,7 +780,7 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
                     {v.reference}
                     {hoveredVerse?.reference === v.reference && (
                       <div 
-                        className="verse-tooltip absolute -top-2 left-1/2 -translate-x-1/2 z-[999999999] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-2xl border rounded-lg p-4 text-sm font-serif leading-relaxed max-w-md whitespace-pre-wrap -translate-y-full mt-1 max-h-40 overflow-y-auto w-max border-gray-200 dark:border-gray-700"
+                        className="verse-tooltip absolute -top-2 left-1/2 -translate-x-1/2 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-2xl border rounded-lg p-4 text-sm font-serif leading-relaxed max-w-md whitespace-pre-wrap -translate-y-full mt-1 max-h-40 overflow-y-auto w-max border-gray-200 dark:border-gray-700"
                         onMouseEnter={() => setHoveredVerse(v)}
                         onMouseLeave={() => setHoveredVerse(null)}
                       >

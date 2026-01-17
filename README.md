@@ -1,78 +1,116 @@
-# Smart Preach - Church Preaching Web App
+Smart Preach – Church Preaching Web App
 
-A modern, responsive web application designed for church preaching, allowing pastors to instantly display Bible verses during services.
+A modern, responsive web application designed for church preaching, allowing pastors to instantly display Bible verses and control preaching flow during live services.
 
-## Features
+Features
 
-- **Live Verse Search**: Search for Bible verses by keyword, phrase, or verse reference
-- **Debounced Search**: 300ms delay for smooth searching experiencew
-- **Verse Display Screen**: Large, readable verse display with smooth animations
-- **Verse Suggestion Panel**: Shows search results, recently used verses, and favorites
-- **Bible API Integration**: Uses bible-api.com for King James Version verses
-- **Turso Database**: Stores search history, recent verses, and favorites
-- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- **Fullscreen Mode**: Presentation-ready layout for congregation viewing
-- **Dark Mode Support**: Friendly for different lighting conditions
-- **Voice Recognition**: Allows pastors to search for verses using voice commands
-- **Notes Management**: Create and manage notes with associated Bible verses
-- **Presentations**: Create and manage presentations with multiple verses
+Live Verse Search: Search for Bible verses by keyword, phrase, or verse reference
 
-## Tech Stack
+Debounced Search: 300ms delay for smooth searching experience
 
-- **Next.js** (App Router) - React framework
-- **Tailwind CSS** - Styling
-- **Turso** (SQLite + libSQL) - Database
-- **TypeScript** - Type safety
-- **Server Actions** - Database operations
-- **lucide-react** - Icons
-- **Web Speech API** - Voice recognition
+Verse Display Screen: Large, readable verse display with smooth animations
 
-## Getting Started
+Verse Suggestion Panel: Shows search results, recently used verses, and favorites
 
-### Prerequisites
+Bible API Integration: Uses bible-api.com for King James Version verses
 
-- Node.js 18+ installed
-- npm, yarn, pnpm, or bun package manager
+Turso Database: Stores search history, recent verses, and favorites
 
-### Installation
+Responsive Design: Optimized for desktop, tablet, and mobile devices
 
-1. Clone the repository:
-```bash
+Fullscreen Mode: Presentation-ready layout for congregation viewing
+
+Dark Mode Support: Friendly for different lighting conditions
+
+Voice Recognition: Allows pastors to search for verses using voice commands
+
+Notes Management: Create and manage notes with associated Bible verses
+
+Presentations: Create and manage presentations with multiple verses
+
+🆕 Live Remote Controller (Second-Screen Mode)
+
+Live Session Control: Start a live preaching session that synchronizes verse and presentation state across devices
+
+Mobile Remote Control: Use a phone or tablet as a remote controller during preaching
+
+QR Code Access: Instantly connect a remote device by scanning a QR code
+
+Real-Time Sync: All connected clients stay in sync with the current verse and presentation state
+
+Remote Actions:
+
+Next / Previous verse
+
+Jump to recent or favorite verses
+
+Navigate presentation slides
+
+Adjust verse font size
+
+Black screen / fade verses temporarily
+
+Session-Based Security: Remote access is scoped to an active session using secure tokens
+
+Tech Stack
+
+Next.js (App Router) – React framework
+
+Tailwind CSS – Styling
+
+Turso (SQLite + libSQL) – Database
+
+TypeScript – Type safety
+
+Server Actions – Database operations
+
+lucide-react – Icons
+
+Web Speech API – Voice recognition
+
+Getting Started
+Prerequisites
+
+Node.js 18+ installed
+
+npm, yarn, pnpm, or bun package manager
+
+Installation
+
+Clone the repository:
+
 git clone <your-repo-url>
 cd smartspreach
-```
 
-2. Install dependencies:
-```bash
+
+Install dependencies:
+
 npm install
 # or
 yarn install
 # or
 pnpm install
-```
 
-3. Set up environment variables:
 
-Copy the `.env.example` file to `.env`:
-```bash
+Set up environment variables:
+
+Copy the .env.example file to .env:
+
 cp .env.example .env
-```
 
-Edit `.env` and add your Turso database credentials:
-```env
+
+Edit .env and add your Turso database credentials:
+
 TURSO_DATABASE_URL=libsql://your-database-url.turso.io
 TURSO_AUTH_TOKEN=your-auth-token-here
-```
+
 
 For local development without Turso, you can use a local SQLite database:
-```env
+
 TURSO_DATABASE_URL=file:local.db
 # No auth token needed for local file
-```
 
-### Running the Development Server
-
-```bash
+Running the Development Server
 npm run dev
 # or
 yarn dev
@@ -80,122 +118,179 @@ yarn dev
 pnpm dev
 # or
 bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
-## Project Structure
+Open http://localhost:3000
+ with your browser to see the application.
 
-```
+Project Structure
 src/
 ├── app/
 │   ├── api/
-│   │   ├── ai-suggestions/route.ts    # AI suggestions API endpoint
-│   │   ├── generate-presentation/route.ts    # Generate presentation API endpoint
-│   │   ├── translate/route.ts    # Translation API endpoint
-│   │   └── verses/route.ts    # API endpoints for verse operations
-│   ├── generate-presentation/page.tsx    # Generate presentation page
-│   ├── presentation/[id]/page.tsx    # Presentation page
-│   ├── settings/page.tsx    # Settings page
-│   ├── layout.tsx             # Root layout with metadata
-│   ├── page.tsx               # Main page with app integration
-│   └── globals.css            # Global styles
+│   │   ├── ai-suggestions/route.ts        # AI suggestions API
+│   │   ├── generate-presentation/route.ts # Presentation generation API
+│   │   ├── translate/route.ts             # Translation API
+│   │   └── verses/route.ts                # Verse API
+│   ├── generate-presentation/page.tsx
+│   ├── presentation/[id]/page.tsx
+│   ├── settings/page.tsx
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── globals.css
 ├── components/
-│   ├── BibleNavigatorContent.tsx    # Bible navigation content
-│   ├── LeftSidebar.tsx    # Left sidebar with navigation
-│   ├── NoteModal.tsx    # Note modal
-│   ├── NotesModal.tsx    # Notes modal
-│   ├── PresentationsModal.tsx    # Presentations modal
-│   ├── SearchBar.tsx          # Search input with debouncing
-│   ├── ThemeProvider.tsx    # Theme provider
-│   ├── VerseDisplay.tsx       # Main verse display with fullscreen
-│   └── VerseSidebar.tsx       # Sidebar with search, recent, favorites
+│   ├── BibleNavigatorContent.tsx
+│   ├── LeftSidebar.tsx
+│   ├── NoteModal.tsx
+│   ├── NotesModal.tsx
+│   ├── PresentationsModal.tsx
+│   ├── SearchBar.tsx
+│   ├── ThemeProvider.tsx
+│   ├── VerseDisplay.tsx
+│   └── VerseSidebar.tsx
 └── lib/
-    ├── bibleApi.ts            # Bible API integration
-    ├── bibleData.ts            # Bible data utilities
-    ├── bibleJson.ts            # Bible JSON utilities
-    ├── serverActions.ts       # Server actions for DB operations
-    └── turso.ts               # Turso database connection
-```
+    ├── bibleApi.ts
+    ├── bibleData.ts
+    ├── bibleJson.ts
+    ├── serverActions.ts
+    └── turso.ts
 
-## Usage
+Usage
+Search for Verses
 
-### Search for Verses
+Type a verse reference (e.g., John 3:16) in the search bar
 
-1. Type a verse reference (e.g., "John 3:16") in the search bar
-2. Or type a keyword (e.g., "love", "faith", "forgiveness")
-3. Results will appear in the sidebar
-4. Click any verse to display it on the main screen
+Or type a keyword (e.g., love, faith, forgiveness)
 
-### Manage Verses
+Results appear in the sidebar
 
-- **Recent Verses**: View your recently displayed verses in the "Recent" tab
-- **Favorites**: Add verses to favorites by clicking the heart icon
-- **Fullscreen**: Click the fullscreen button in the top-right of the verse display for presentation mode
+Click a verse to display it instantly
 
-### Voice Recognition
+Live Remote Controller
 
-1. Click the microphone icon in the header
-2. Speak a verse reference or keyword
-3. The app will automatically search for and display the verse
+Start a Live Session from the main interface
 
-### Notes Management
+Scan the generated QR code using a phone or tablet
 
-1. Click the notes icon in the left sidebar
-2. Create a new note or edit an existing one
-3. Associate verses with your notes
+Use the mobile interface to:
 
-### Presentations
+Navigate verses or presentation slides
 
-1. Click the presentations icon in the left sidebar
-2. Create a new presentation or edit an existing one
-3. Add verses to your presentation
+Control font size
 
-### Responsive Design
+Temporarily hide verses (black screen)
 
-- **Desktop**: Two-column layout with sidebar
-- **Tablet**: Collapsible sidebar
-- **Mobile**: Full-screen verse view with slide-up verse list
+End the session at any time
 
-## Database Schema
+Manage Verses
 
-### Tables
+Recent Verses: Quickly revisit recently displayed verses
 
-**verses**: Stores displayed verses
-- `id` (INTEGER, PRIMARY KEY)
-- `book` (TEXT)
-- `chapter` (INTEGER)
-- `verse` (INTEGER)
-- `text` (TEXT)
-- `translation` (TEXT)
-- `reference` (TEXT, UNIQUE)
-- `displayed_at` (INTEGER, timestamp)
-- `created_at` (INTEGER, timestamp)
+Favorites: Save frequently used verses
 
-**search_logs**: Stores search history
-- `id` (INTEGER, PRIMARY KEY)
-- `query` (TEXT)
-- `result_count` (INTEGER)
-- `created_at` (INTEGER, timestamp)
+Fullscreen: Presentation-ready mode for live services
 
-**favorites**: Stores favorite verses
-- `id` (INTEGER, PRIMARY KEY)
-- `verse_id` (INTEGER, FOREIGN KEY)
-- `created_at` (INTEGER, timestamp)
+Voice Recognition
 
-## Building for Production
+Click the microphone icon
 
-```bash
+Speak a verse reference or keyword
+
+The verse is searched and displayed automatically
+
+Notes Management
+
+Open Notes from the sidebar
+
+Create or edit sermon notes
+
+Attach Bible verses to notes for quick reference
+
+Presentations
+
+Open Presentations from the sidebar
+
+Create or edit a presentation
+
+Add multiple verses and navigate them live
+
+Responsive Design
+
+Desktop: Two-column layout with sidebar
+
+Tablet: Collapsible sidebar
+
+Mobile: Full-screen verse view with slide-up controls
+
+Database Schema
+Tables
+
+verses
+
+id (INTEGER, PRIMARY KEY)
+
+book (TEXT)
+
+chapter (INTEGER)
+
+verse (INTEGER)
+
+text (TEXT)
+
+translation (TEXT)
+
+reference (TEXT, UNIQUE)
+
+displayed_at (INTEGER)
+
+created_at (INTEGER)
+
+search_logs
+
+id (INTEGER, PRIMARY KEY)
+
+query (TEXT)
+
+result_count (INTEGER)
+
+created_at (INTEGER)
+
+favorites
+
+id (INTEGER, PRIMARY KEY)
+
+verse_id (INTEGER, FOREIGN KEY)
+
+created_at (INTEGER)
+
+live_sessions
+
+id (TEXT, PRIMARY KEY)
+
+presentation_id (INTEGER, nullable)
+
+current_reference (TEXT)
+
+slide_index (INTEGER)
+
+font_size (INTEGER)
+
+is_blackout (BOOLEAN)
+
+created_at (INTEGER)
+
+updated_at (INTEGER)
+
+Building for Production
 npm run build
 npm start
-```
 
-## Deploy on Vercel
+Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new).
+Deploy easily using the Vercel Platform
+.
+See the Next.js deployment documentation
+.
 
-Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## License
+License
 
 This project is licensed under the MIT License.

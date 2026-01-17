@@ -34,7 +34,7 @@ export default function NoteModal({ isOpen, onClose, onSave, editingNote, select
          setContent('')
        }
      }
-   }, [isOpen, editingNote]) // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+   }, [isOpen, editingNote])  
 
   const handleSave = () => {
     if (!title.trim() && !content.trim()) return

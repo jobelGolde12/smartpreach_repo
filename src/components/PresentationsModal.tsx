@@ -95,7 +95,7 @@ export default function PresentationsModal({ isOpen, onClose }: PresentationsMod
         }
       }
      }
-   }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+   }, [isOpen])  
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

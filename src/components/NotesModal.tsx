@@ -172,7 +172,7 @@ export default function NotesModal({ isOpen, onClose, notes, onSave }: NotesModa
        setTitle('')
        setContent('')
      }
-   }, [isOpen]) // eslint-disable-line react-hooks/set-state-in-effect
+   }, [isOpen])  
 
      useEffect(() => {
        if (view === 'edit' && editingNote) {
@@ -182,7 +182,7 @@ export default function NotesModal({ isOpen, onClose, notes, onSave }: NotesModa
          setTitle('')
          setContent('')
        }
-     }, [view, editingNote]) // eslint-disable-line react-hooks/set-state-in-effect
+     }, [view, editingNote])  
 
      useEffect(() => {
        if (editorRef.current) {
@@ -191,7 +191,7 @@ export default function NotesModal({ isOpen, onClose, notes, onSave }: NotesModa
          setActiveFormats(new Set())
          setLineCount(content.split('\n').length || 1)
        }
-     }, [content, view]) // eslint-disable-line react-hooks/set-state-in-effect
+     }, [content, view])  
 
   const handleSave = () => {
     if (!content.trim()) return
