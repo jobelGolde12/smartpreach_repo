@@ -2,7 +2,7 @@
 
 import { BibleVerse } from '@/lib/bibleApi'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Book, Maximize2, Minimize2, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import { Book, Maximize2, Minimize2, ChevronLeft, ChevronRight, ChevronDown, Trash2 } from 'lucide-react'
 import HighlightTooltip from './HighlightTooltip'
 
 interface VerseDisplayProps {
@@ -106,6 +106,26 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
       console.error('Failed to fetch highlights:', error)
     }
   }, [])
+
+  const deleteRecentVerse = useCallback(async (reference: string) => {
+    try {
+      const response = await fetch(`/api/verses`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference }),
+      })
+      
+      if (response.ok) {
+        // Refresh the recent verses list
+        await fetchRecentVerses()
+        console.log('Verse deleted successfully')
+      } else {
+        console.error('Failed to delete verse:', await response.text())
+      }
+    } catch (error) {
+      console.error('Error deleting verse:', error)
+    }
+  }, [fetchRecentVerses])
 
 
 
@@ -398,6 +418,16 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
   }
 
   if (!verse) {
+    if (recentVerses.length > 0 && !defaultVerseSetRef.current) {
+      return (
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 md:p-16">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
+            <p className="text-xl text-gray-600 dark:text-gray-400">Getting Recent Verse...</p>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 md:p-16">
         <div className="text-center max-w-2xl">
@@ -636,31 +666,49 @@ const [recentVerses, setRecentVerses] = useState<BibleVerse[]>([])
                   <div
                     key={i}
                     className="relative group text-xs whitespace-nowrap px-3 py-1 rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors min-w-fit flex-shrink-0"
-onMouseEnter={(e) => {
-                       setHoveredVerse(v)
-                       const tooltip = e.currentTarget.querySelector('.verse-tooltip') as HTMLElement
-                       if (tooltip) {
-                         const rect = e.currentTarget.getBoundingClientRect()
-                         Object.assign(tooltip.style, {
-                           position: 'fixed',
-                           top: `${rect.top + rect.height / 2}px`,
-                           left: `${rect.right + 15}px`,
-                           transform: 'translateY(-50%)',
-                           zIndex: '999999999'
-                         })
-                       }
-                     }}
-                      onMouseLeave={() => setHoveredVerse(null)}
-                     onClick={() => {
-                       setHoveredVerse(null)
-                       onRecentSelect?.(v.reference)
-                     }}
+                    onMouseEnter={(e) => {
+                        setHoveredVerse(v)
+                        const tooltip = e.currentTarget.querySelector('.verse-tooltip') as HTMLElement
+                        if (tooltip) {
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          Object.assign(tooltip.style, {
+                            position: 'fixed',
+                            top: `${rect.top + rect.height / 2}px`,
+                            left: `${rect.right + 15}px`,
+                            transform: 'translateY(-50%)',
+                            zIndex: '999999999'
+                          })
+                        }
+                      }}
+                      onClick={() => {
+                        setHoveredVerse(null)
+                        onRecentSelect?.(v.reference)
+                      }}
                   >
                     {v.reference}
                     {hoveredVerse?.reference === v.reference && (
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-[999999999] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-2xl border rounded-lg p-4 text-sm font-serif leading-relaxed max-w-md pointer-events-none whitespace-pre-wrap -translate-y-full mt-1 max-h-40 overflow-y-auto w-max border-gray-200 dark:border-gray-700">
-                        <div className="font-semibold mb-2 text-gray-900 dark:text-gray-100 text-base">{v.reference}</div>
-                        <div className="leading-relaxed text-gray-800 dark:text-gray-200 text-sm">{v.text}</div>
+                      <div 
+                        className="verse-tooltip absolute -top-2 left-1/2 -translate-x-1/2 z-[999999999] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-2xl border rounded-lg p-4 text-sm font-serif leading-relaxed max-w-md whitespace-pre-wrap -translate-y-full mt-1 max-h-40 overflow-y-auto w-max border-gray-200 dark:border-gray-700"
+                        onMouseEnter={() => setHoveredVerse(v)}
+                        onMouseLeave={() => setHoveredVerse(null)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold mb-2 text-gray-900 dark:text-gray-100 text-base">{v.reference}</div>
+                            <div className="leading-relaxed text-gray-800 dark:text-gray-200 text-sm">{v.text}</div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteRecentVerse(v.reference)
+                              setHoveredVerse(null)
+                            }}
+                            className="flex-shrink-0 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 transition-colors"
+                            aria-label="Delete verse"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
